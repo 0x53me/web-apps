@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EE Learning</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#/">EE Learning</a>
+      <form class="search" id="search-form" role="search">
+        <input type="search" id="search-input" placeholder="単元・公式・用語を検索" aria-label="検索">
+      </form>
+      <nav class="nav" aria-label="メインメニュー">
+        <a href="#/formulas" data-nav="formulas">公式集</a>
+        <a href="#/glossary" data-nav="glossary">用語集</a>
+        <a href="#/tools" data-nav="tools">教材</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="app" class="container" aria-live="polite"></main>
+
+  <footer class="site-footer">
+    <div class="container">電気電子情報系 授業学習ノート(個人の復習用)</div>
+  </footer>
+
+  <!-- 外部ライブラリ(バージョン固定) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+
+  <!-- 本体 -->
+  <script src="js/markdown.js"></script>
+  <script src="js/tools/registry.js"></script>
+  <!-- 教材(ここに追加した順に一覧に並ぶ) -->
+  <script src="js/tools/rc.js"></script>
+  <script src="js/tools/rlc.js"></script>
+  <script src="js/tools/logic.js"></script>
+  <script src="js/tools/base.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

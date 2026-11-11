@@ -1,0 +1,663 @@
+/* ===== トークン ===== */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f0efeb;
+  --text: #1d1d1f;
+  --muted: #5f6368;
+  --border: #dedcd6;
+  --accent: #1f5fbf;
+  --accent-soft: #e7eefb;
+  --code-bg: #f1f0ec;
+
+  /* 科目カラー */
+  --subj-circuits: #c2410c;
+  --subj-electronics: #0f766e;
+  --subj-digital: #6d28d9;
+  --subj-info: #1d4ed8;
+
+  /* 難易度 */
+  --lv-basic: #15803d;
+  --lv-standard: #1d4ed8;
+  --lv-advanced: #b91c1c;
+
+  /* グラフ・教材 */
+  --plot-grid: #e8e6e1;
+  --plot-axis: #9a988f;
+  --plot-1: #1f5fbf;
+  --plot-2: #c2410c;
+  --plot-3: #0f766e;
+  --plot-4: #7c3aed;
+  --plot-5: #be123c;
+  --plot-6: #a16207;
+  --error: #b91c1c;
+
+  --radius: 10px;
+  --header-h: 56px;
+  --font: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  --mono: ui-monospace, "Cascadia Code", Consolas, "BIZ UDGothic", monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141517;
+    --surface: #1c1d20;
+    --surface-2: #25262a;
+    --text: #e8e8ea;
+    --muted: #a1a1aa;
+    --border: #34353a;
+    --accent: #7aa7ff;
+    --accent-soft: #1e2a44;
+    --code-bg: #232428;
+
+    --subj-circuits: #fb923c;
+    --subj-electronics: #2dd4bf;
+    --subj-digital: #a78bfa;
+    --subj-info: #60a5fa;
+
+    --lv-basic: #4ade80;
+    --lv-standard: #60a5fa;
+    --lv-advanced: #f87171;
+
+    --plot-grid: #2c2d31;
+    --plot-axis: #6b6b73;
+    --plot-1: #7aa7ff;
+    --plot-2: #fb923c;
+    --plot-3: #2dd4bf;
+    --plot-4: #a78bfa;
+    --plot-5: #fb7185;
+    --plot-6: #facc15;
+    --error: #f87171;
+    color-scheme: dark;
+  }
+}
+
+/* ===== ベース ===== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--code-bg);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+.container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+main.container { flex: 1; padding-top: 24px; padding-bottom: 48px; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+
+/* ===== ヘッダー ===== */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px;
+  min-height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.brand:hover { text-decoration: none; }
+
+.search { flex: 1; max-width: 360px; margin-left: auto; }
+.search input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+}
+.search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.nav { display: flex; gap: 4px; }
+.nav a {
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+.nav a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+
+@media (max-width: 640px) {
+  :root { --header-h: 96px; }
+  .header-inner { flex-wrap: wrap; gap: 4px 8px; padding-top: 8px; padding-bottom: 8px; }
+  .nav { margin-left: auto; }
+  .search { order: 3; flex-basis: 100%; max-width: none; }
+}
+
+/* ===== フッター ===== */
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 16px 0;
+}
+
+/* ===== 共通部品 ===== */
+.breadcrumb {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+  overflow-wrap: anywhere;
+}
+.breadcrumb .sep { margin: 0 6px; }
+
+.page-head { margin-bottom: 24px; }
+.page-head h1 { margin: 0 0 4px; font-size: 1.6rem; line-height: 1.4; }
+.page-head p { margin: 0; }
+.page-head.subj { border-left: 4px solid var(--subj-color); padding-left: 14px; }
+
+.hero { padding: 16px 0 8px; }
+.hero h1 { margin: 0 0 4px; font-size: 1.8rem; line-height: 1.4; }
+.hero p { margin: 0; }
+
+.section { margin-top: 32px; }
+.section-title {
+  font-size: 1.05rem;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.section-title .more { font-size: 0.85rem; font-weight: normal; }
+
+.empty {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  color: var(--muted);
+  background: var(--surface);
+}
+.empty p:first-child { margin-top: 0; }
+
+/* 科目カラー */
+.subj { --subj-color: var(--accent); }
+.subj-circuits { --subj-color: var(--subj-circuits); }
+.subj-electronics { --subj-color: var(--subj-electronics); }
+.subj-digital { --subj-color: var(--subj-digital); }
+.subj-info { --subj-color: var(--subj-info); }
+
+/* カード */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  transition: border-color 0.15s, transform 0.15s;
+}
+.card.subj { border-top: 4px solid var(--subj-color); }
+.card:hover { text-decoration: none; border-color: var(--accent); transform: translateY(-1px); }
+.card-title { font-weight: 700; font-size: 1.05rem; }
+.card-desc { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
+.card-meta { margin-top: auto; padding-top: 6px; font-size: 0.8rem; color: var(--subj-color, var(--muted)); font-weight: 600; }
+
+/* リンクリスト */
+.link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.link-list a {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.link-list a:hover { border-color: var(--accent); text-decoration: none; }
+
+/* タグ・チップ */
+.level {
+  display: inline-block;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  padding: 0 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.level-basic { color: var(--lv-basic); }
+.level-standard { color: var(--lv-standard); }
+.level-advanced { color: var(--lv-advanced); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-block;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.chip-pending { background: var(--surface-2); color: var(--muted); }
+
+/* ===== 科目ページ ===== */
+.lesson-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.lesson-item {
+  display: grid;
+  grid-template-columns: 2.2em 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+}
+.lesson-item:hover { border-color: var(--accent); text-decoration: none; }
+.lesson-no { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.lesson-title { line-height: 1.5; }
+.lesson-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+
+@media (max-width: 640px) {
+  .lesson-item { grid-template-columns: 2em 1fr; }
+  .lesson-tags { grid-column: 2; justify-content: flex-start; }
+}
+
+/* ===== 解説ページ ===== */
+.lesson-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.toc {
+  position: sticky;
+  top: calc(var(--header-h) + 16px);
+  font-size: 0.88rem;
+}
+.toc summary { font-weight: 700; cursor: pointer; color: var(--muted); margin-bottom: 4px; }
+.toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--border); }
+.toc button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  line-height: 1.5;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.toc button:hover { color: var(--accent); }
+
+.lesson-main { min-width: 0; }
+
+.lesson-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 20px; }
+
+@media (max-width: 899px) {
+  .lesson-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .toc {
+    position: static;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+  }
+  .toc ol { margin-top: 4px; }
+}
+
+.pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.pager a {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.5;
+}
+.pager a:hover { border-color: var(--accent); text-decoration: none; }
+.pager-next { text-align: right; }
+
+/* ===== 本文(Markdown) ===== */
+.prose { overflow-wrap: break-word; }
+.prose h1 { font-size: 1.7rem; line-height: 1.4; margin: 0 0 12px; }
+.prose h2 {
+  font-size: 1.3rem;
+  line-height: 1.4;
+  margin: 2.2em 0 0.8em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  scroll-margin-top: calc(var(--header-h) + 16px);
+}
+.prose h3 { font-size: 1.08rem; margin: 1.8em 0 0.6em; scroll-margin-top: calc(var(--header-h) + 16px); }
+.prose p, .prose ul, .prose ol { margin: 0.8em 0; }
+.prose ul, .prose ol { padding-left: 1.5em; }
+.prose li + li { margin-top: 0.2em; }
+
+.prose blockquote {
+  margin: 1em 0;
+  padding: 8px 16px;
+  border-left: 4px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  border-radius: 0 6px 6px 0;
+}
+.prose blockquote p { margin: 0.3em 0; }
+
+.prose pre {
+  background: var(--code-bg);
+  padding: 12px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+.prose pre code { background: none; padding: 0; }
+
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.92rem;
+}
+.prose th, .prose td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; vertical-align: middle; }
+.prose th { background: var(--surface-2); white-space: nowrap; }
+
+.prose details {
+  margin: 1em 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  background: var(--surface);
+}
+.prose details > summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.prose details[open] > summary { margin-bottom: 8px; }
+
+.prose img { max-width: 100%; height: auto; }
+
+/* 数式 */
+.katex { font-size: 1.08em; }
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+  margin: 1em 0;
+}
+.math-fallback, .math-error { color: var(--lv-advanced); }
+
+/* ===== 教材埋め込み ===== */
+.tool-embed {
+  margin: 1.5em 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.tool-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.tool-title { font-weight: 700; }
+.tool-link { font-size: 0.8rem; }
+.tool-body { padding: 16px; }
+.tool-pending { padding: 16px; color: var(--muted); text-align: center; font-size: 0.9rem; }
+.tool-embed:has(> .tool-pending) { border-style: dashed; background: transparent; }
+#tool-mount.tool-embed { margin-top: 0; }
+
+/* ===== 教材の部品(ToolKit) ===== */
+.tool-body { display: grid; gap: 14px; line-height: 1.6; }
+.tool-body > * { min-width: 0; }
+
+.tk-mono { font-family: var(--mono); }
+.tk-sub { font-weight: 700; font-size: 0.92rem; }
+.tk-note { margin: 0; font-size: 0.82rem; color: var(--muted); }
+.tk-note code { font-size: 0.85em; }
+.tk-sep { border: 0; border-top: 1px solid var(--border); margin: 6px 0; width: 100%; }
+.tk-error { color: var(--error); font-size: 0.88rem; }
+
+.tk-row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+
+/* スライダー */
+.tk-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px 20px;
+}
+.tk-field {
+  display: grid;
+  grid-template-columns: 1.6em minmax(0, 1fr) 6.2em;
+  align-items: center;
+  gap: 10px;
+}
+.tk-field[hidden] { display: none; }
+.tk-field-wide { grid-template-columns: auto minmax(0, 1fr); }
+.tk-label { font-weight: 700; font-style: italic; font-family: "Times New Roman", serif; font-size: 1.05rem; white-space: nowrap; }
+.tk-value { font-variant-numeric: tabular-nums; font-size: 0.9rem; white-space: nowrap; }
+.tk-field input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+.tk-input {
+  width: 100%;
+  font-size: 1rem;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+.tk-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tk-input.is-stale { color: var(--muted); text-decoration: line-through; }
+
+/* セグメント・ボタン */
+.tk-segment {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 100%;
+}
+.tk-segment button {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 5px 12px;
+  border: 0;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tk-segment button + button { border-left: 1px solid var(--border); }
+.tk-segment button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+
+.tk-btn {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.tk-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tk-btn-small { font-size: 0.8rem; padding: 2px 10px; border-radius: 999px; }
+.tk-presets { gap: 6px; }
+
+/* 結果表示 */
+.tk-readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tk-readout:empty { display: none; }
+/* 区切り線は各マスの右・下に引き、外枠からはみ出た分は overflow で隠す */
+.tk-stat {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0 -1px -1px 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.tk-stat-wide { grid-column: 1 / -1; }
+.tk-stat-label { font-size: 0.78rem; color: var(--muted); }
+.tk-stat-value { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tk-stat-value .katex-display, .tk-stat-value .katex { white-space: normal; }
+.tk-stat .katex { font-size: 1em; }
+
+/* グラフ */
+.tk-plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.tk-plots-stack { grid-template-columns: minmax(0, 1fr); }
+.tk-canvas {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  touch-action: pan-y;
+}
+
+/* 論理回路 */
+.tk-result { padding: 10px 14px; background: var(--surface-2); border-radius: 8px; }
+.tk-result-label { font-size: 0.78rem; color: var(--muted); }
+.tk-result-expr { font-size: 1.15rem; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.tk-term { padding: 0 6px; border-bottom: 3px solid var(--g); border-radius: 4px; cursor: default; }
+.tk-term:hover { background: var(--surface); }
+.tk-plus { margin: 0 2px; color: var(--muted); }
+
+.tk-logic-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 640px) { .tk-logic-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.tk-table, .tk-kmap, .tk-steps { border-collapse: collapse; font-variant-numeric: tabular-nums; margin-top: 6px; }
+.tk-table th, .tk-table td { border: 1px solid var(--border); padding: 0 10px; text-align: center; font-size: 0.9rem; }
+.tk-table th { background: var(--surface-2); }
+.tk-table th:last-child, .tk-table td:last-child { border-left: 2px solid var(--plot-axis); }
+.tk-table tr.is-hl td { background: color-mix(in srgb, var(--g) 18%, transparent); }
+
+.tk-cell {
+  font: inherit;
+  font-family: var(--mono);
+  width: 100%;
+  min-width: 2em;
+  border: 0;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 2px 0;
+}
+.tk-cell.v0 { color: var(--muted); }
+.tk-cell.v1 { font-weight: 700; color: var(--accent); }
+.tk-cell.v2 { color: var(--plot-6); }
+.tk-cell:hover { background: var(--accent-soft); }
+
+.tk-kmap th, .tk-kmap td { border: 1px solid var(--border); text-align: center; font-family: var(--mono); font-size: 0.9rem; }
+.tk-kmap thead th, .tk-kmap tbody th { background: var(--surface-2); padding: 2px 8px; font-weight: normal; color: var(--muted); }
+.tk-kmap td { width: 3.2em; height: 3.2em; position: relative; padding: 0; }
+.tk-kmap td .tk-cell { height: 100%; font-size: 1rem; }
+.tk-kmap td.is-hl { background: color-mix(in srgb, var(--g) 22%, transparent); }
+.tk-corner { position: relative; min-width: 3.6em; height: 2.6em; }
+.tk-corner-col { position: absolute; right: 4px; top: 0; font-size: 0.75rem; }
+.tk-corner-row { position: absolute; left: 4px; bottom: 0; font-size: 0.75rem; }
+.tk-dots { position: absolute; left: 3px; bottom: 3px; display: flex; gap: 2px; pointer-events: none; }
+.tk-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--g); }
+
+/* ビット表示 */
+.tk-bits { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.tk-byte { display: inline-flex; gap: 3px; }
+.tk-bits:empty { display: none; }
+.tk-bit {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  width: 1.7em;
+  height: 1.9em;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.tk-bit.is-on { color: var(--text); font-weight: 700; background: var(--surface-2); }
+.tk-bit:hover { border-color: var(--accent); }
+.tk-bit.f-sign { border-bottom: 3px solid var(--plot-5); }
+.tk-bit.f-exp { border-bottom: 3px solid var(--plot-2); }
+.tk-bit.f-frac { border-bottom: 3px solid var(--plot-1); }
+.tk-legend { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 0.8rem; color: var(--muted); }
+.tk-bit-key { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-left: 6px; }
+.tk-bit-key.f-sign { background: var(--plot-5); }
+.tk-bit-key.f-exp { background: var(--plot-2); }
+.tk-bit-key.f-frac { background: var(--plot-1); }
+
+.tk-steps th, .tk-steps td { padding: 1px 12px 1px 0; text-align: left; font-size: 0.9rem; font-weight: normal; }
+.tk-steps th { color: var(--muted); white-space: nowrap; }
+.tk-steps tr:last-child td { border-top: 1px solid var(--text); }
