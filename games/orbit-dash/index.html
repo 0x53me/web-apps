@@ -62,6 +62,7 @@
     box-shadow: 0 6px 24px rgba(255,216,77,.35);
   }
   button.main:active { transform: scale(.96); }
+  a.back { color: var(--muted); font-size: 14px; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -78,11 +79,13 @@
   <p class="how">ボールは円の上を回り続けます。<br><b>画面タップで回る向きが逆に。</b><br>隕石をよけて ★ を集めよう！</p>
   <div class="sub" id="bestTitle"></div>
   <button class="main" id="startBtn">スタート</button>
+  <a class="back" href="../">← ゲーム一覧</a>
 </div>
 
 <div id="pause" class="overlay hidden">
   <h2>一時停止</h2>
   <button class="main" id="resumeBtn">つづける</button>
+  <a class="back" href="../">← ゲーム一覧</a>
 </div>
 
 <div id="over" class="overlay hidden">
@@ -91,6 +94,7 @@
   <div class="record hidden" id="newRecord">NEW RECORD!</div>
   <div class="sub" id="finalInfo"></div>
   <button class="main" id="retryBtn">もう一度</button>
+  <a class="back" href="../">← ゲーム一覧</a>
 </div>
 
 <script>
