@@ -48,6 +48,29 @@ export const CONFIG = {
     wrongWayTime: 0.8,     // 逆向きにこの秒数走り続けたら「逆走」と表示
   },
 
+  // ---- CPU ----
+  cpu: {
+    // CPU カートの名前と色。skill は同じ強さの中での個人差(1 が基準)
+    karts: [
+      { name: 'ブルー', color: 0x2a6fdb, skill: 1.0, lane: -3 },
+      { name: 'グリーン', color: 0x2bb673, skill: 0.97, lane: 0 },
+      { name: 'イエロー', color: 0xf2b705, skill: 0.985, lane: 3 },
+    ],
+    // 強さ3段階
+    //   speed: 最高速度の倍率 / steerGain: ハンドルの正確さ / drift: ドリフトを使うか
+    //   catchUp: 差が開いたときに速さを調整する割合(後ろなら速く、前なら遅く)
+    levels: {
+      easy:   { label: 'かんたん', speed: 0.8, steerGain: 2.0, drift: false, catchUp: 0.06 },
+      normal: { label: 'ふつう', speed: 0.92, steerGain: 2.5, drift: true, catchUp: 0.04 },
+      hard:   { label: 'むずかしい', speed: 1.0, steerGain: 3.0, drift: true, catchUp: 0.03 },
+    },
+    lookAhead: 8,          // コースの何点先を目標にするか
+    lookAheadPerSpeed: 0.15, // 速いほど遠くを見る(速さ1あたりに足す点の数。大きいとカーブの内側を突っ切る)
+    edgeMargin: 1.5,       // 道路の端からこの距離まで来たら、中央へ戻るようにハンドルを足す
+    laneSwing: 1.5,        // 走るラインをゆっくり左右にゆらす幅
+    catchUpDistance: 120,  // プレイヤーとこの距離離れたら catchUp を最大にする
+  },
+
   // ---- ターボ(ミニターボ・アイテムのダッシュで共通) ----
   boost: {
     speedMul: 1.28,        // ターボ中の最高速度の倍率

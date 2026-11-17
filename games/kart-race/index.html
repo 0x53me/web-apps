@@ -25,6 +25,7 @@
 
   <!-- レース中の表示 -->
   <div id="hud" hidden>
+    <div id="rank" class="rank">4th</div>
     <div class="race-info">
       <div id="lap" class="lap">LAP 1/3</div>
       <div id="time" class="time">0:00.00</div>
@@ -41,6 +42,7 @@
   <div id="finish" class="overlay" hidden>
     <div class="panel">
       <h1>FINISH!</h1>
+      <p id="finish-rank" class="finish-rank"></p>
       <p class="total">TOTAL <span id="finish-total">0:00.00</span></p>
       <ol id="finish-laps" class="finish-laps"></ol>
       <p id="finish-best" class="best"></p>
@@ -64,6 +66,12 @@
     <div class="panel">
       <h1>ターボサーキット</h1>
       <p class="sub">3D カートレース</p>
+      <div class="levels" role="group" aria-label="CPUの強さ">
+        <span class="levels-label">CPU</span>
+        <button type="button" data-level="easy">かんたん</button>
+        <button type="button" data-level="normal">ふつう</button>
+        <button type="button" data-level="hard">むずかしい</button>
+      </div>
       <p class="label">操作方法をえらんでスタート</p>
       <div class="modes">
         <button type="button" id="btn-buttons" class="mode">

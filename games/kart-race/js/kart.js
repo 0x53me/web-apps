@@ -115,8 +115,22 @@ export class Kart {
     this.hopY = 0;                  // 小ジャンプの高さ
     this.hopV = 0;
     this.boostTime = 0;             // ターボの残り時間(秒)
+    this.speedMul = 1;              // 最高速度の倍率(CPU の強さの調整に使う)
+    this.bump = 0;                  // 直前に他のカートとぶつかった強さ(効果音などで使う)
 
     this.fx = new KartEffects(scene, this.mesh);
+  }
+
+  // 今いる場所のコースの真ん中に戻す(CPU が引っかかって動けなくなったとき用)
+  respawnOnTrack() {
+    const t = this.track;
+    const i = this.trackIndex;
+    const tan = t.tangents[i];
+    this.pos.set(t.points[i].x, 0, t.points[i].z);
+    this.heading = Math.atan2(tan.x, tan.z);
+    this.vx = this.vz = this.forwardSpeed = 0;
+    this.drifting = false;
+    this.driftCharge = 0;
   }
 
   // ためたミニターボの段階(0 = まだ、1〜3)
@@ -212,10 +226,12 @@ export class Kart {
     this.onGrass = Math.abs(info.offset) > this.track.halfWidth;
 
     // ターボ中は最高速度が上がり、芝生でも減速しない
+    // (CPU は強さに応じて speedMul で最高速度を変える)
+    const maxSpeed = c.maxSpeed * this.speedMul;
     const boosting = this.boostTime > 0;
     if (boosting) this.boostTime = Math.max(0, this.boostTime - dt);
-    const maxF = boosting ? c.maxSpeed * CONFIG.boost.speedMul
-      : (this.onGrass ? c.grassMaxSpeed : c.maxSpeed);
+    const maxF = boosting ? maxSpeed * CONFIG.boost.speedMul
+      : (this.onGrass ? c.grassMaxSpeed : maxSpeed);
 
     // ドリフトの開始・終了
     this.updateDrift(dt, inp, vf);
@@ -238,7 +254,7 @@ export class Kart {
     // ハンドル: 遅いときは曲がれず、速すぎると少し曲がりにくい
     const speedAbs = Math.abs(vf);
     const turnFactor = Math.min(1, speedAbs / c.turnFullSpeed)
-      * (1 - c.highSpeedTurnLoss * Math.min(1, speedAbs / c.maxSpeed));
+      * (1 - c.highSpeedTurnLoss * Math.min(1, speedAbs / maxSpeed));
     let steer = this.steer;
     if (this.drifting) {
       // ドリフト中はずっとドリフトの向きに曲がり続ける。
@@ -325,5 +341,37 @@ export class Kart {
     for (const p of this.frontPivots) p.rotation.y = -this.steer * 0.45;
 
     this.fx.update(dt, this);
+  }
+}
+
+// カート同士の当たり判定。重なったら押し離し、ぶつかった向きの速度をはね返す
+export function collideKarts(karts) {
+  const minD = CONFIG.kart.radius * 2;
+  for (const k of karts) k.bump = 0;
+  for (let i = 0; i < karts.length; i++) {
+    for (let j = i + 1; j < karts.length; j++) {
+      const a = karts[i];
+      const b = karts[j];
+      const dx = b.pos.x - a.pos.x;
+      const dz = b.pos.z - a.pos.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 >= minD * minD || d2 < 1e-6) continue;
+
+      const d = Math.sqrt(d2);
+      const nx = dx / d; // a から b への向き
+      const nz = dz / d;
+      const push = (minD - d) / 2; // 重なった分を半分ずつ押し戻す
+      a.pos.x -= nx * push; a.pos.z -= nz * push;
+      b.pos.x += nx * push; b.pos.z += nz * push;
+
+      // 近づく向きに動いていたら、その成分を入れかえるようにはね返す
+      const rv = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
+      if (rv < 0) {
+        const imp = (-(1 + 0.3) * rv) / 2;
+        a.vx -= nx * imp; a.vz -= nz * imp;
+        b.vx += nx * imp; b.vz += nz * imp;
+        a.bump = b.bump = -rv;
+      }
+    }
   }
 }

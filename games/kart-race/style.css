@@ -62,6 +62,24 @@ body {
   pointer-events: none;
 }
 
+/* 順位(左上、戻るリンクの下) */
+.rank {
+  position: fixed;
+  top: calc(44px + env(safe-area-inset-top));
+  left: calc(var(--edge) + env(safe-area-inset-left));
+  font-size: clamp(30px, 9vmin, 54px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 3px 0 #1b1b2f, 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.rank small {
+  margin-left: 2px;
+  font-size: 0.4em;
+}
+
 /* 周回数・タイム(画面上の中央) */
 .race-info {
   position: fixed;
@@ -283,7 +301,46 @@ body {
   50% { opacity: 0.3; }
 }
 
+/* ===== CPU の強さの選択 ===== */
+.levels {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.levels-label {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.levels button {
+  padding: 6px 12px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.levels button.on {
+  border-color: #ffd60a;
+  background: #ffd60a;
+  color: #1b1b2f;
+}
+
 /* ===== ゴール画面 ===== */
+.finish-rank {
+  margin-top: 4px;
+  font-size: clamp(18px, 5vmin, 24px);
+  font-weight: 800;
+}
+
 .panel .total {
   margin-top: 8px;
   font-size: clamp(20px, 6vmin, 30px);

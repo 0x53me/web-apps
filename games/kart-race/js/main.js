@@ -2,9 +2,10 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
-import { Kart } from './kart.js';
+import { Kart, collideKarts } from './kart.js';
 import { Input } from './input.js';
 import { LapCounter, formatTime } from './race.js';
+import { KartAI } from './ai.js';
 
 // ---- 画面の準備 ----
 const canvas = document.getElementById('game');
@@ -26,11 +27,40 @@ const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.3, 600);
 
 // ---- コースとカート ----
 const track = new Track(scene);
-const kart = new Kart(scene, track);
-kart.placeAtStart(0);
-const laps = new LapCounter(track);
+
+// レースに出る全員。プレイヤーは一番後ろ(スロット3)からスタート
+const PLAYER_SLOT = 3;
+const player = { name: 'あなた', isPlayer: true, slot: PLAYER_SLOT, kart: new Kart(scene, track), laps: new LapCounter(track), ai: null };
+const cpus = CONFIG.cpu.karts.map((c, i) => {
+  const kart = new Kart(scene, track, c.color);
+  return { name: c.name, isPlayer: false, slot: i, kart, laps: new LapCounter(track), ai: new KartAI(kart, 'normal', c) };
+});
+const racers = [player, ...cpus];
+const allKarts = racers.map((r) => r.kart);
+const kart = player.kart; // カメラが追いかけるカート
+const laps = player.laps;
+for (const r of racers) r.kart.placeAtStart(r.slot);
+
+// CPU の強さ(タイトルで選ぶ。前回の選択を覚えておく)
+const LEVEL_KEY = 'kart-race-level';
+let level = 'normal';
+try { level = localStorage.getItem(LEVEL_KEY) || 'normal'; } catch { /* そのまま */ }
+if (!CONFIG.cpu.levels[level]) level = 'normal';
+
 // URL に ?debug を付けたときだけ、ブラウザのコンソールから状態を見られるようにする
-if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { kart, laps });
+if (new URLSearchParams(location.search).has('debug')) {
+  Object.assign(window, {
+    kart, laps, racers, KartAI,
+    // 早送り: sec 秒分のレースを一気に計算する(each は1ステップごとに呼ばれる)
+    simulate(sec, each) {
+      for (let t = 0; t < sec; t += 1 / 60) {
+        raceTime += 1 / 60;
+        updateRacers(1 / 60);
+        if (each) each();
+      }
+    },
+  });
+}
 
 // ---- 入力 ----
 const controlsEl = document.getElementById('controls');
@@ -42,6 +72,7 @@ const titleEl = $('title');
 const hudEl = $('hud');
 const speedEl = $('speed-val');
 const lapEl = $('lap');
+const rankEl = $('rank');
 const timeEl = $('time');
 const lapListEl = $('lap-list');
 const wrongWayEl = $('wrong-way');
@@ -53,6 +84,8 @@ let state = 'title';
 let raceTime = 0;    // レース開始からの時間(秒)
 let wrongWay = 0;    // 逆向きに走り続けている時間
 let lastMode = 'buttons';
+let finishOrder = []; // ゴールした順
+let ranking = racers; // 今の順位(1位から順に並べたもの)
 
 // ---- ベストタイムの保存(localStorage)。使えない環境でも止まらないように try で囲む ----
 const BEST_TOTAL_KEY = 'kart-race-best-total';
@@ -127,19 +160,31 @@ function updateWrongWay(dt) {
   wrongWayEl.hidden = wrongWay < CONFIG.race.wrongWayTime;
 }
 
-// ---- 周回の表示 ----
+// ---- 順位: ゴールした人はゴール順、まだの人は「どれだけ進んだか」で並べる ----
+function updateRanking() {
+  const running = racers
+    .filter((r) => !r.laps.finished)
+    .sort((a, b) => b.laps.progress(b.kart) - a.laps.progress(a.kart));
+  ranking = [...finishOrder, ...running];
+}
+
+const ordinal = (n) => n + (['st', 'nd', 'rd'][n - 1] || 'th'); // 1 → "1st"
+
+// ---- 周回・順位などの表示 ----
 let lastHud = '';
 function updateHud() {
   const kmh = Math.round(Math.abs(kart.forwardSpeed) * 3.6);
   const lapText = `LAP ${laps.lap}/${CONFIG.race.laps}`;
   const timeText = formatTime(raceTime);
+  const rank = ranking.indexOf(player) + 1;
   // 変わったときだけ書きかえる(毎フレーム DOM を触ると重くなるため)
-  const key = kmh + lapText + timeText;
+  const key = kmh + lapText + timeText + rank;
   if (key === lastHud) return;
   lastHud = key;
   speedEl.textContent = kmh;
   lapEl.textContent = lapText;
   timeEl.textContent = timeText;
+  rankEl.innerHTML = `${ordinal(rank)}<small>/${racers.length}</small>`;
 }
 
 function renderLapList() {
@@ -152,6 +197,10 @@ function renderLapList() {
 function finishRace() {
   state = 'finish';
   wrongWayEl.hidden = true;
+  // ゴール後はプレイヤーのカートも CPU に運転させる
+  player.ai = new KartAI(kart, 'normal');
+  const rank = finishOrder.indexOf(player) + 1;
+  $('finish-rank').textContent = `${rank}位 / ${racers.length}台`;
   const total = laps.finishTime;
   const bestLap = Math.min(...laps.lapTimes);
 
@@ -171,7 +220,7 @@ function finishRace() {
     `ベスト合計 ${formatTime(newTotal ? total : oldTotal)}${newTotal ? ' <b>NEW!</b>' : ''}<br>` +
     `ベストラップ ${formatTime(newLap ? bestLap : oldLap)}${newLap ? ' <b>NEW!</b>' : ''}`;
 
-  showMessage('FINISH!', 2);
+  showMessage(rank === 1 ? '1st! WIN!' : 'FINISH!', 2);
   setTimeout(() => {
     if (state !== 'finish') return;
     controlsEl.hidden = true;
@@ -181,16 +230,33 @@ function finishRace() {
 
 // ---- メインループ ----
 const clock = new THREE.Clock();
-const COAST = { steer: 0, accel: false, brake: false, drift: false, item: false }; // ゴール後は手を離した状態
 
-function loop() {
-  // 前のフレームからの経過時間。大きすぎるときは上限で切る
-  const dt = Math.min(clock.getDelta(), CONFIG.maxDelta);
+// 全員を1フレーム分動かす
+function updateRacers(dt) {
+  const playerProg = laps.progress(kart);
+  const lv = CONFIG.cpu.levels[level];
+  for (const r of racers) {
+    let inp;
+    if (r.ai) {
+      // 差が開きすぎないよう、プレイヤーより後ろなら少し速く、前なら少し遅く
+      let catchUp = 0;
+      if (!r.isPlayer && state === 'race') {
+        const gap = playerProg - r.laps.progress(r.kart);
+        catchUp = Math.max(-1, Math.min(1, gap / CONFIG.cpu.catchUpDistance)) * lv.catchUp;
+      }
+      inp = r.ai.getInput(dt, catchUp);
+    } else {
+      inp = input.getState();
+    }
+    r.kart.update(dt, inp);
+  }
+  collideKarts(allKarts);
 
-  if (state === 'race') {
-    raceTime += dt;
-    kart.update(dt, input.getState());
-    const ev = laps.update(kart, raceTime);
+  // 周回の判定
+  for (const r of racers) {
+    const ev = r.laps.update(r.kart, raceTime);
+    if (ev === 'finish') finishOrder.push(r);
+    if (!r.isPlayer) continue;
     if (ev === 'lap') {
       renderLapList();
       showMessage(laps.lap === CONFIG.race.laps ? 'FINAL LAP' : `LAP ${laps.lap}`);
@@ -198,10 +264,24 @@ function loop() {
       renderLapList();
       finishRace();
     }
-    updateWrongWay(dt);
-    updateHud();
+  }
+  updateRanking();
+}
+
+function loop() {
+  // 前のフレームからの経過時間。大きすぎるときは上限で切る
+  const dt = Math.min(clock.getDelta(), CONFIG.maxDelta);
+
+  if (state === 'race') {
+    raceTime += dt;
+    updateRacers(dt);
+    if (state === 'race') {
+      updateWrongWay(dt);
+      updateHud();
+    }
   } else if (state === 'finish') {
-    kart.update(dt, COAST); // ゴール後はゆっくり止まる
+    raceTime += dt;
+    updateRacers(dt); // ゴール後も CPU は走り続ける
   }
 
   if (messageTimer > 0) {
@@ -216,12 +296,18 @@ renderer.setAnimationLoop(loop);
 
 // ---- レースを始める(最初から) ----
 function beginRace() {
-  kart.placeAtStart(0);
+  for (const r of racers) {
+    r.kart.placeAtStart(r.slot);
+    r.laps.reset(0);
+    r.laps.update(r.kart, 0); // 今いる位置を覚えさせる
+    if (r.isPlayer) { r.ai = null; r.kart.speedMul = 1; } // ゴール後の自動運転を解除
+    else r.ai.setLevel(level);
+  }
   updateCamera(0, true);
   raceTime = 0;
   wrongWay = 0;
-  laps.reset(0);
-  laps.update(kart, 0); // 今いる位置を覚えさせる
+  finishOrder = [];
+  updateRanking();
   renderLapList();
   lastHud = '';
   updateHud();
@@ -268,10 +354,20 @@ function backToTitle() {
   hudEl.hidden = true;
   controlsEl.hidden = true;
   messageEl.hidden = true;
-  kart.placeAtStart(0);
+  for (const r of racers) r.kart.placeAtStart(r.slot);
   updateCamera(0, true);
   titleEl.hidden = false;
 }
+
+// ---- CPU の強さの選択ボタン ----
+const levelButtons = [...document.querySelectorAll('[data-level]')];
+function selectLevel(lv) {
+  level = lv;
+  for (const b of levelButtons) b.classList.toggle('on', b.dataset.level === lv);
+  try { localStorage.setItem(LEVEL_KEY, lv); } catch { /* 保存できなくても続ける */ }
+}
+for (const b of levelButtons) b.addEventListener('click', () => selectLevel(b.dataset.level));
+selectLevel(level);
 
 $('btn-buttons').addEventListener('click', () => start('buttons'));
 $('btn-tilt').addEventListener('click', () => start('tilt'));
