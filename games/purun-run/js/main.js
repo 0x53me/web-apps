@@ -24,6 +24,13 @@ resize();
 let stage = new Stage(STAGES[0]);
 const player = new Player(stage.start.x, stage.start.y);
 const camera = { x: 0, y: 0 };
+let enemies = [];
+
+// 敵をマップの初期位置に並べ直す
+function spawnEnemies() {
+  enemies = stage.enemySpawns.map(s => new Enemy(s.type, s.col, s.row));
+}
+spawnEnemies();
 
 // カメラを主人公に合わせる（すぐに合わせるなら instant = true）
 function updateCamera(dt, instant) {
@@ -37,17 +44,65 @@ function updateCamera(dt, instant) {
   camera.y = Math.max(0, Math.min(camera.y, stage.height - H));
 }
 
-// 穴に落ちたらスタートからやり直し（ライフは次の段階で追加）
+// やられたらスタートからやり直し（ライフ制はあとの段階で追加）。敵も最初の位置に戻す
 function respawn() {
   player.reset(stage.start.x, stage.start.y);
+  spawnEnemies();
   updateCamera(0, true);
+}
+
+// 2つの四角形が重なっているか（AABB の当たり判定）
+function overlaps(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+// ---------- 敵の更新と、主人公とのぶつかり判定 ----------
+function updateEnemies(dt) {
+  // 画面に近づいた敵から動き出す（遠くの敵が勝手に穴へ落ちないように）
+  for (const e of enemies) {
+    if (!e.active && e.x < camera.x + W + CONFIG.ENEMY_WAKE_MARGIN) e.active = true;
+    if (e.active) e.update(dt, stage);
+  }
+
+  // 敵どうしがぶつかったら、お互いに向きを変える
+  for (let i = 0; i < enemies.length; i++) {
+    const a = enemies[i];
+    if (!a.alive || !a.active) continue;
+    for (let j = i + 1; j < enemies.length; j++) {
+      const b = enemies[j];
+      if (!b.alive || !b.active || !overlaps(a, b)) continue;
+      if (a.x < b.x) { a.dir = -1; b.dir = 1; } else { a.dir = 1; b.dir = -1; }
+    }
+  }
+
+  // 主人公とのぶつかり
+  if (!player.dead) {
+    // いま主人公と重なっている敵を全部集める
+    const hits = enemies.filter(e => e.alive && e.active && overlaps(player, e));
+    if (hits.length > 0) {
+      // 落ちている途中で、1つ前の足元が敵の頭より上にあった → 上から踏んだ
+      const prevBottom = player.prevY + player.h;
+      const stomped = hits.filter(e => player.vy > 0 && prevBottom <= e.y + CONFIG.STOMP_TOLERANCE);
+      if (stomped.length > 0) {
+        // 踏めた敵は全部まとめて倒す（2匹同時に踏んでもOK）
+        stomped.forEach(e => e.stomp());
+        player.bounce(Math.min(...stomped.map(e => e.y)));
+      } else {
+        player.die();   // 横や下からぶつかった
+      }
+    }
+  }
+
+  enemies = enemies.filter(e => !e.removed);
 }
 
 // ---------- 更新 ----------
 function update(dt) {
   player.update(dt, stage);
-  if (player.y > stage.height + 64) respawn();   // 画面の下まで落ちた
-  updateCamera(dt, false);
+  if (!player.dead) updateEnemies(dt);          // やられている間は敵も止める
+  if (!player.dead && player.y > stage.height + 64) respawn();       // 穴に落ちた
+  if (player.dead && player.deadT > CONFIG.RESPAWN_DELAY) respawn(); // やられ演出が終わった
+  if (!player.dead) updateCamera(dt, false);    // やられている間はカメラを止める
 }
 
 // ---------- 描画 ----------
@@ -197,7 +252,9 @@ function drawHud() {
 function draw() {
   drawBackground();
   drawStage();
-  player.draw(ctx, Math.round(camera.x), Math.round(camera.y));
+  const camX = Math.round(camera.x), camY = Math.round(camera.y);
+  for (const e of enemies) e.draw(ctx, camX, camY);
+  player.draw(ctx, camX, camY);
   drawHud();
 }
 

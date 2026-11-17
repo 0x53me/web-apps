@@ -32,6 +32,17 @@ const CONFIG = {
   PLAYER_W: 24,
   PLAYER_H: 26,
 
+  // ---- 敵 ----
+  ENEMY_SLOW_SPEED: 45,      // どんぐりんの歩く速さ
+  ENEMY_FAST_SPEED: 85,      // ツノカブの歩く速さ
+  ENEMY_WAKE_MARGIN: 96,     // 画面の右端からこのピクセル数まで近づいたら敵が動き出す
+  STOMP_BOUNCE: 420,         // 敵を踏んだときに跳ね返る速さ
+  STOMP_BOUNCE_HOLD: 640,    // ジャンプボタンを押しながら踏んだときの跳ね返り（高く跳べる）
+  STOMP_TOLERANCE: 10,       // 「上から踏んだ」と認める余裕（ピクセル）。大きいほど踏みやすい
+
+  // ---- やられたとき ----
+  RESPAWN_DELAY: 1.6,        // やられてからスタートに戻るまでの秒数
+
   // ---- カメラ ----
   CAMERA_LEAD: 70,     // 進む方向の先を何ピクセル多く映すか
   CAMERA_SMOOTH: 8,    // カメラが追いつく速さ（大きいほどピッタリ追う）

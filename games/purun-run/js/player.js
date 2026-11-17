@@ -27,11 +27,43 @@ class Player {
     this.jumping = false;       // ジャンプで上昇中か（長押し判定用）
     this.squash = 0;            // 見た目の伸び縮み（+ でつぶれる / - で伸びる）
     this.t = 0;                 // アニメーション用の時間
+    this.prevY = y;             // 1つ前の更新での y（敵を「上から」踏んだかの判定に使う）
+    this.dead = false;          // やられたか
+    this.deadT = 0;             // やられてからの時間
+  }
+
+  // 敵に横から当たった：上に跳ねてから画面の下へ落ちていく
+  die() {
+    if (this.dead) return;
+    this.dead = true;
+    this.deadT = 0;
+    this.vx = 0;
+    this.vy = -520;
+  }
+
+  // 敵を踏んだ：上に跳ね返る（ジャンプボタンを押していれば高く）
+  bounce(enemyTop) {
+    this.y = enemyTop - this.h;
+    this.vy = -(Input.jump ? CONFIG.STOMP_BOUNCE_HOLD : CONFIG.STOMP_BOUNCE);
+    this.jumping = Input.jump;   // 押し続ければ長押しジャンプと同じく高く上がる
+    this.onGround = false;
+    this.squash = -0.3;
   }
 
   // ---------- 毎フレームの更新 ----------
   update(dt, stage) {
     this.t += dt;
+    this.prevY = this.y;
+
+    // やられた後は、地形を無視して落ちていくだけ
+    if (this.dead) {
+      this.deadT += dt;
+      if (this.deadT > 0.35) {   // 少し止まってから動き出す
+        this.vy = Math.min(this.vy + CONFIG.GRAVITY * dt, CONFIG.MAX_FALL);
+        this.y += this.vy * dt;
+      }
+      return;
+    }
 
     // --- 左右の移動 ---
     const dir = (Input.right ? 1 : 0) - (Input.left ? 1 : 0);
@@ -171,11 +203,13 @@ class Player {
     const rw = (this.w / 2 + 3) * (1 + s);        // 横の半径（つぶれると広がる）
     const rh = (this.h / 2 + 2) * (1 - s);        // 縦の半径
 
-    // 影
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    ctx.beginPath();
-    ctx.ellipse(cx, by + 1, rw * 0.9, 3, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // 影（地面にいるときだけ）
+    if (this.onGround && !this.dead) {
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(cx, by + 1, rw * 0.9, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // からだ（下が平らな、おもち型）
     const top = by - rh * 2;
@@ -199,13 +233,24 @@ class Player {
     ctx.ellipse(cx - rw * 0.45 * this.facing, top + rh * 0.55, rw * 0.18, rh * 0.22, -0.5 * this.facing, 0, Math.PI * 2);
     ctx.fill();
 
-    // 目（向いている方向に寄せる）
+    // 目（向いている方向に寄せる。やられたときは × の目）
     const ex = cx + this.facing * rw * 0.25, ey = top + rh * 0.95;
-    ctx.fillStyle = '#123';
-    for (const off of [-rw * 0.28, rw * 0.28]) {
+    if (this.dead) {
+      ctx.strokeStyle = '#123';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(ex + off, ey, 2.6, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
+      for (const off of [-rw * 0.28, rw * 0.28]) {
+        ctx.moveTo(ex + off - 3, ey - 3); ctx.lineTo(ex + off + 3, ey + 3);
+        ctx.moveTo(ex + off + 3, ey - 3); ctx.lineTo(ex + off - 3, ey + 3);
+      }
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#123';
+      for (const off of [-rw * 0.28, rw * 0.28]) {
+        ctx.beginPath();
+        ctx.ellipse(ex + off, ey, 2.6, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     // ほっぺ
     ctx.fillStyle = 'rgba(255,120,150,0.55)';
