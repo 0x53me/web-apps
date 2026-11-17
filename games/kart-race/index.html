@@ -28,17 +28,12 @@
     <div class="speed"><span id="speed-val">0</span><small>km/h</small></div>
   </div>
 
-  <!-- スマホ用の操作ボタン(data-key が操作の種類) -->
+  <!-- スマホ用の操作ボタン(data-key が操作の種類)。アクセルは自動なのでボタンはない -->
   <div id="controls" hidden>
-    <div class="pad pad-left">
-      <button type="button" data-key="left" aria-label="左">◀</button>
-      <button type="button" data-key="right" aria-label="右">▶</button>
-    </div>
-    <div class="pad pad-right">
-      <button type="button" data-key="drift" aria-label="ドリフト">DRIFT</button>
-      <button type="button" data-key="brake" aria-label="ブレーキ">BRAKE</button>
-      <button type="button" data-key="accel" aria-label="アクセル">GO</button>
-    </div>
+    <button type="button" data-key="left" aria-label="左">◀</button>
+    <button type="button" data-key="right" aria-label="右">▶</button>
+    <button type="button" data-key="brake" aria-label="ブレーキ">BRAKE</button>
+    <button type="button" data-key="drift" aria-label="ドリフト">DRIFT</button>
   </div>
 
   <!-- タイトル画面 -->
@@ -55,7 +50,7 @@
           <span class="ic">📱</span>傾け操作
         </button>
       </div>
-      <p class="hint">PC: 矢印キー / WASD で操作、Shift でドリフト</p>
+      <p class="hint">スマホはアクセル自動(BRAKE で減速・バック)<br>PC: 矢印キー / WASD で操作、Shift でドリフト</p>
     </div>
   </div>
 

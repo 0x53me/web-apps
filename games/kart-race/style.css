@@ -82,26 +82,16 @@ body {
   pointer-events: none; /* ボタン以外の場所は下に触れるようにする */
 }
 
-.pad {
-  position: absolute;
-  bottom: calc(var(--edge) + env(safe-area-inset-bottom));
-  pointer-events: auto;
-}
-
-.pad-left {
-  left: calc(var(--edge) + env(safe-area-inset-left));
-  width: calc(var(--btn) * 2 + var(--gap));
-  height: var(--btn);
-}
-
-.pad-right {
-  right: calc(var(--edge) + env(safe-area-inset-right));
-  width: calc(var(--btn) * 2.25 + var(--gap));
-  height: calc(var(--btn) * 2 + var(--gap));
+#controls {
+  --L: calc(var(--edge) + env(safe-area-inset-left));   /* 左端からの位置 */
+  --R: calc(var(--edge) + env(safe-area-inset-right));  /* 右端からの位置 */
+  --B: calc(var(--edge) + env(safe-area-inset-bottom)); /* 下端からの位置 */
+  --big: calc(var(--btn) * 1.4);                        /* DRIFT の大きさ */
 }
 
 #controls button {
   position: absolute;
+  pointer-events: auto;
   width: var(--btn);
   height: var(--btn);
   border: 3px solid rgba(255, 255, 255, 0.65);
@@ -120,34 +110,32 @@ body {
   transform: scale(0.93);
 }
 
-[data-key="left"]  { left: 0; bottom: 0; }
-[data-key="right"] { left: calc(var(--btn) + var(--gap)); bottom: 0; }
+/* --- ボタン操作: 左手で ◀▶、右手で DRIFT(右下・大)と BRAKE。アクセルは自動 --- */
+#controls [data-key="left"]  { left: var(--L); bottom: var(--B); }
+#controls [data-key="right"] { left: calc(var(--L) + var(--btn) + var(--gap)); bottom: var(--B); }
 
-#controls [data-key="accel"] {
-  right: 0;
-  bottom: 0;
-  width: calc(var(--btn) * 1.25);
-  height: calc(var(--btn) * 1.25);
-  background: rgba(30, 170, 80, 0.5);
+#controls [data-key="drift"] {
+  right: var(--R);
+  bottom: var(--B);
+  width: var(--big);
+  height: var(--big);
+  font-size: calc(var(--btn) * 0.26);
+  background: rgba(150, 70, 230, 0.5);
 }
 
 #controls [data-key="brake"] {
-  right: calc(var(--btn) * 1.25 + var(--gap));
-  bottom: 0;
+  right: calc(var(--R) + var(--big) + var(--gap));
+  bottom: var(--B);
   font-size: calc(var(--btn) * 0.2);
   background: rgba(210, 50, 50, 0.45);
 }
 
-/* ドリフトはブレーキの上(アクセルを押したまま別の指で押しやすい位置) */
-#controls [data-key="drift"] {
-  right: calc(var(--btn) * 1.25 + var(--gap));
-  bottom: calc(var(--btn) + var(--gap));
-  font-size: calc(var(--btn) * 0.2);
-  background: rgba(150, 70, 230, 0.45);
-}
+/* --- 傾け操作: ◀▶ は使わないので、左下に DRIFT、右下に BRAKE --- */
+#controls.tilt [data-key="left"],
+#controls.tilt [data-key="right"] { display: none; }
 
-/* 傾け操作のときは ◀▶ を隠す */
-#controls.tilt .pad-left { display: none; }
+#controls.tilt [data-key="drift"] { right: auto; left: var(--L); }
+#controls.tilt [data-key="brake"] { right: var(--R); }
 
 /* ===== タイトル画面 ===== */
 .overlay {

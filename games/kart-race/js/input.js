@@ -17,6 +17,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export class Input {
   constructor(controlsEl) {
     this.mode = 'buttons';      // 'buttons'(ボタン操作) か 'tilt'(傾け操作)
+    this.autoAccel = false;     // true ならブレーキを押していない間はずっとアクセル(スマホ用)
     this.keys = new Set();      // 押されているキーボードのキー
     this.touchKeys = new Set(); // 指で押されている画面のボタン
     this.mouseKey = null;       // マウスで押されている画面のボタン(PCでの確認用)
@@ -108,7 +109,7 @@ export class Input {
     if (this.mode === 'tilt' && steer === 0) steer = this.tilt; // キーを押していないときは傾きを使う
     return {
       steer,
-      accel: this.has('accel'),
+      accel: this.has('accel') || (this.autoAccel && !this.has('brake')),
       brake: this.has('brake'),
       drift: this.has('drift'),
       item: this.has('item'),

@@ -107,8 +107,11 @@ renderer.setAnimationLoop(loop);
 
 // ---- タイトル画面: 操作方法を選んでスタート ----
 async function start(mode) {
+  // スマホ(指で操作する端末)かどうか。PC ならキーボードで遊ぶので画面のボタンは出さない
+  const isTouch = matchMedia('(pointer: coarse)').matches || new URLSearchParams(location.search).has('touch');
+
   // スマホなら全画面+横向き固定を試す(対応していない端末では何もしない)
-  if (matchMedia('(pointer: coarse)').matches && document.documentElement.requestFullscreen) {
+  if (isTouch && document.documentElement.requestFullscreen) {
     document.documentElement.requestFullscreen()
       .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
       .catch(() => {});
@@ -123,10 +126,11 @@ async function start(mode) {
   }
 
   input.mode = mode;
+  input.autoAccel = isTouch; // スマホはアクセル自動(右手の親指をドリフトに使えるように)
   controlsEl.classList.toggle('tilt', mode === 'tilt');
   titleEl.hidden = true;
   hudEl.hidden = false;
-  controlsEl.hidden = false;
+  controlsEl.hidden = !isTouch;
   kart.placeAtStart(0);
   updateCamera(0, true);
   running = true;
