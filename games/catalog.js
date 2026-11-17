@@ -121,6 +121,36 @@ const GAMES = [
     },
   },
   {
+    section: 'main', path: 'kart-race/', icon: '🏎️', name: 'ターボサーキット',
+    desc: '3Dのカートでコースを走ろう。スマホはボタンか傾けて操作',
+    tags: ['レース', '3D', 'アクション'],
+    best: () => null, // ベストタイムは周回機能を入れたら表示する
+    thumb(c, w, h) {
+      const sky = c.createLinearGradient(0, 0, 0, h * 0.45);
+      sky.addColorStop(0, '#5bb8f0'); sky.addColorStop(1, '#bfe6ff');
+      c.fillStyle = sky; c.fillRect(0, 0, w, h * 0.45);
+      c.fillStyle = '#5fae3f'; c.fillRect(0, h * 0.45, w, h);
+      const hy = h * 0.45, vx = w * 0.56;
+      c.fillStyle = '#2e7d32';
+      for (const [x, s] of [[30, 1], [70, 0.7], [250, 0.9], [292, 1.2]]) {
+        c.beginPath(); c.moveTo(x, hy - 34 * s); c.lineTo(x - 12 * s, hy + 4); c.lineTo(x + 12 * s, hy + 4); c.fill();
+      }
+      c.fillStyle = '#d62828';
+      c.beginPath(); c.moveTo(vx - 6, hy); c.lineTo(vx + 6, hy); c.lineTo(w * 0.98, h); c.lineTo(w * 0.02, h); c.fill();
+      c.fillStyle = '#5a5d63';
+      c.beginPath(); c.moveTo(vx - 4, hy); c.lineTo(vx + 4, hy); c.lineTo(w * 0.92, h); c.lineTo(w * 0.08, h); c.fill();
+      c.strokeStyle = '#f2f2f2'; c.lineWidth = 3; c.setLineDash([14, 12]);
+      c.beginPath(); c.moveTo(vx, hy); c.lineTo(w * 0.5, h); c.stroke(); c.setLineDash([]);
+      const kx = w * 0.5, ky = h * 0.8;
+      c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(kx, ky + 26, 60, 10, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#1a1a1a'; c.fillRect(kx - 56, ky, 22, 26); c.fillRect(kx + 34, ky, 22, 26);
+      c.fillStyle = '#e63946'; _rr(c, kx - 40, ky - 4, 80, 24, 6); c.fill();
+      c.fillRect(kx - 46, ky - 26, 92, 7);
+      c.fillStyle = '#222'; c.fillRect(kx - 34, ky - 20, 5, 18); c.fillRect(kx + 29, ky - 20, 5, 18);
+      c.fillStyle = '#e63946'; c.beginPath(); c.arc(kx, ky - 30, 15, 0, Math.PI * 2); c.fill();
+    },
+  },
+  {
     section: 'others', path: 'others/snake/', icon: '🐍', name: 'スネークゲーム',
     desc: 'エサを食べて長くなろう。壁と自分の体に注意。',
     tags: ['アクション', '定番'],
@@ -227,7 +257,7 @@ const GAMES = [
 ];
 
 // タグの表示順（ここにないタグは後ろに並ぶ）
-const TAG_ORDER = ['ワンタップ', '反射神経', 'タイミング', 'アクション', 'パズル', 'じっくり', 'エンドレス', '定番'];
+const TAG_ORDER = ['ワンタップ', '反射神経', 'タイミング', 'アクション', 'レース', '3D', 'パズル', 'じっくり', 'エンドレス', '定番'];
 
 // ---------- 一覧の描画 ----------
 //   root:    このページから games/ への相対パス（トップは ''、others は '../'）

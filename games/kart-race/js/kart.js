@@ -192,9 +192,18 @@ export class Kart {
     if (vn > 0) {
       this.vx -= (1 + c.wallBounce) * vn * nx;
       this.vz -= (1 + c.wallBounce) * vn * nz;
-      this.vx *= c.wallFriction;
-      this.vz *= c.wallFriction;
+      // 強く当たるほど減速する(軽くこするだけならほとんど減速しない)
+      const keep = 1 - (1 - c.wallFriction) * Math.min(1, vn / 10);
+      this.vx *= keep;
+      this.vz *= keep;
       this.wallHit = vn;
+
+      // 正面から当たって止まると抜け出せないので、向きを壁に沿う方向へ少し回す
+      const t = info.tangent;
+      const dir = Math.sin(this.heading) * t.x + Math.cos(this.heading) * t.z >= 0 ? 1 : -1;
+      let diff = Math.atan2(t.x * dir, t.z * dir) - this.heading;
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      this.heading += diff * Math.min(0.3, Math.max(0.05, vn * 0.03));
     }
   }
 

@@ -23,6 +23,7 @@
 - `orbit-dash/`: Orbit Dash(タップで回転方向を反転)
 - `color-gate/`: Color Gate(タップで色を切り替えてゲートを通過)
 - `tsumiage/`: ツミアゲ(タップでブロックを落として積み上げる)
+- `kart-race/`: ターボサーキット(3Dカートレース。Three.js を CDN から使う例外。詳細と進捗は `kart-race/CLAUDE.md`)
 - `others/`: その他ゲーム(一覧ページ `others/index.html` から開く。定番ゲームはここに置き、`catalog.js` に `section: 'others'` で足す)
   - `others/snake/`: スネークゲーム
   - `others/tetris/`: テトリス風ゲーム
