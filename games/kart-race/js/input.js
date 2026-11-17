@@ -22,6 +22,8 @@ export class Input {
     this.touchKeys = new Set(); // 指で押されている画面のボタン
     this.mouseKey = null;       // マウスで押されている画面のボタン(PCでの確認用)
     this.tilt = 0;              // 傾きから計算したハンドル(-1〜1)
+    this.lastSteerDir = 0;      // ◀▶ の押している向き(じわっと入力用)
+    this.steerStart = 0;        // その向きを押し始めた時刻(秒)
     this.buttons = [...controlsEl.querySelectorAll('[data-key]')];
 
     // ---- キーボード ----
@@ -106,6 +108,16 @@ export class Input {
   // 今の入力をまとめて返す
   getState() {
     let steer = (this.has('right') ? 1 : 0) - (this.has('left') ? 1 : 0);
+
+    // スマホの ◀▶ は「じわっと」切れるようにする(押した瞬間は少しだけ、押し続けると最大)
+    if (this.autoAccel) {
+      const now = performance.now() / 1000;
+      if (steer !== this.lastSteerDir) { this.lastSteerDir = steer; this.steerStart = now; }
+      const a = CONFIG.assist;
+      const k = Math.min(1, a.startSteer + (1 - a.startSteer) * ((now - this.steerStart) / a.rampTime));
+      steer *= k;
+    }
+
     if (this.mode === 'tilt' && steer === 0) steer = this.tilt; // キーを押していないときは傾きを使う
     return {
       steer,

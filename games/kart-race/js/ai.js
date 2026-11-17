@@ -5,6 +5,26 @@ import { CONFIG } from './config.js';
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a)); // -180°〜180° にそろえる
 
+// ハンドルアシスト(スマホのプレイヤー用)。
+// 今走っているラインのまま、コースに沿って走るためのハンドルの量を返す(-1〜1)。
+// 道路の端に寄りすぎていたら、中央へ戻す量も足す。
+export function assistSteer(kart) {
+  const t = kart.track;
+  const a = CONFIG.assist;
+  const info = t.query(kart.pos, kart.trackIndex);
+  // 今のラインを保つ(ただし端から margin 以上内側)
+  const lim = t.halfWidth - a.edgeMargin;
+  const lane = clamp(info.offset, -lim, lim);
+  const ahead = Math.round(a.lookAhead + Math.max(0, kart.forwardSpeed) * a.lookAheadPerSpeed);
+  const i = (info.index + ahead) % t.count;
+  const p = t.points[i];
+  const r = t.rights[i];
+  const x = p.x + r.x * lane;
+  const z = p.z + r.z * lane;
+  const diff = wrapAngle(Math.atan2(x - kart.pos.x, z - kart.pos.z) - kart.heading);
+  return clamp(-diff * a.gain, -1, 1);
+}
+
 export class KartAI {
   // level: 'easy' | 'normal' | 'hard'
   // opts.lane: 走るラインの左右のずれ、opts.skill: 個人差(最高速度の倍率)

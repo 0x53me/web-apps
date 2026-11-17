@@ -5,7 +5,7 @@ import { Track } from './track.js';
 import { Kart, collideKarts } from './kart.js';
 import { Input } from './input.js';
 import { LapCounter, formatTime } from './race.js';
-import { KartAI } from './ai.js';
+import { KartAI, assistSteer } from './ai.js';
 
 // ---- 画面の準備 ----
 const canvas = document.getElementById('game');
@@ -231,6 +231,28 @@ function finishRace() {
 // ---- メインループ ----
 const clock = new THREE.Clock();
 
+// プレイヤーの入力。スマホのときはハンドルアシストを足す
+function playerInput() {
+  const inp = input.getState();
+  const a = CONFIG.assist;
+  if (!input.autoAccel || !a.enabled) return inp; // PC(キーボード)はそのまま
+
+  const auto = assistSteer(kart); // コースに沿って走るためのハンドル
+  const off = track.query(kart.pos, kart.trackIndex).offset;
+  const over = Math.abs(off) - (track.halfWidth - a.edgeMargin); // 端からはみ出しそうな量
+  if (Math.abs(inp.steer) < 0.05) {
+    // ハンドルを触っていないときは、コースに沿って自動で軽く切る(端に来たらしっかり切る)
+    const s = over > 0 ? a.strength + (1 - a.strength) * Math.min(1, over / 2) : a.strength;
+    inp.steer = auto * s;
+  } else {
+    // 道路の端を越えて外へ向かって切っているときは、少しだけ戻す
+    if (over > 0 && Math.sign(inp.steer) === Math.sign(off)) {
+      inp.steer += (auto - inp.steer) * a.edgeGuard * Math.min(1, over / 2);
+    }
+  }
+  return inp;
+}
+
 // 全員を1フレーム分動かす
 function updateRacers(dt) {
   const playerProg = laps.progress(kart);
@@ -246,7 +268,7 @@ function updateRacers(dt) {
       }
       inp = r.ai.getInput(dt, catchUp);
     } else {
-      inp = input.getState();
+      inp = playerInput();
     }
     r.kart.update(dt, inp);
   }
