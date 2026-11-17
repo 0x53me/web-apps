@@ -32,6 +32,17 @@ body {
   font-size: 13px; font-weight: 700; text-decoration: none;
 }
 
+/* ===== 全画面ボタン（全画面でないときだけ表示） ===== */
+#fsBtn {
+  position: fixed; z-index: 20;
+  top: calc(env(safe-area-inset-top) + 8px);
+  left: calc(env(safe-area-inset-left) + 82px);
+  padding: 4px 10px; border-radius: 999px; border: 0;
+  background: rgba(11, 16, 32, .45); color: #fff;
+  font: inherit; font-size: 13px; font-weight: 700;
+}
+.hidden { display: none !important; }
+
 /* ===== 仮想ボタン ===== */
 #controls { display: none; }
 body.touch #controls { display: block; }   /* タッチ端末と分かったら表示 */

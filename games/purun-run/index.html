@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>プルン・ラン</title>
+<!-- ホーム画面に追加して開いたときは、全画面・横向きで起動する -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,6 +18,7 @@
   <div id="screen"><canvas id="game"></canvas></div>
 
   <a id="backBtn" href="../">← 一覧</a>
+  <button id="fsBtn" class="hidden" type="button">⛶ 全画面</button>
 
   <!-- スマホ用の仮想ボタン（タッチ端末のときだけ表示） -->
   <div id="controls">
@@ -40,5 +44,6 @@
   <script src="js/input.js"></script>
   <script src="js/player.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/fullscreen.js"></script>
 </body>
 </html>

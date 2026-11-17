@@ -78,8 +78,8 @@ const Input = {
   function onTouch(e) {
     // タッチ端末だと分かったら仮想ボタンを表示
     document.body.classList.add('touch');
-    // 「← 一覧」リンクのタップだけは普通に動かす
-    if (e.target.closest && e.target.closest('#backBtn')) return;
+    // 「← 一覧」「⛶ 全画面」のタップだけは普通に動かす
+    if (e.target.closest && e.target.closest('#backBtn, #fsBtn')) return;
     e.preventDefault();   // スクロール・拡大・長押しメニューを止める
     update(e.touches);
   }
