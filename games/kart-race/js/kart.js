@@ -117,6 +117,13 @@ export class Kart {
     this.boostTime = 0;             // ターボの残り時間(秒)
     this.speedMul = 1;              // 最高速度の倍率(CPU の強さの調整に使う)
     this.bump = 0;                  // 直前に他のカートとぶつかった強さ(効果音などで使う)
+    this.remote = false;            // true = ほかの端末が動かしているカート(オンライン対戦)
+
+    // アイテム
+    this.item = null;               // 持っているアイテム('dash' / 'pylon' / null)
+    this.itemRoll = 0;              // ルーレットの残り時間(0 になったら使える)
+    this.spinTime = 0;              // スピンの残り時間(パイロンに当たったとき)
+    this.spinAngle = 0;             // 見た目だけの回転
 
     this.fx = new KartEffects(scene, this.mesh);
   }
@@ -144,6 +151,15 @@ export class Kart {
   // ターボをかける(ミニターボ・アイテムのダッシュで共通)
   addBoost(seconds) {
     this.boostTime = Math.max(this.boostTime, seconds);
+  }
+
+  // パイロンに当たってスピンする(ドリフトとターボは消える)
+  spinOut() {
+    this.spinTime = CONFIG.items.spinTime;
+    this.drifting = false;
+    this.driftCharge = 0;
+    this.driftLocked = true;
+    this.boostTime = 0;
   }
 
   // ドリフトを始める
@@ -204,12 +220,23 @@ export class Kart {
     this.trackIndex = t.query(this.pos).index;
     this.drifting = false;
     this.driftCharge = this.driftYaw = this.hopY = this.hopV = this.boostTime = 0;
+    this.item = null;
+    this.itemRoll = this.spinTime = this.spinAngle = 0;
     this.updateMesh(0);
   }
 
   // 毎フレームの更新。inp = { steer, accel, brake, ... }
   update(dt, inp) {
     const c = CONFIG.kart;
+
+    // スピン中は操作できず、どんどん遅くなる
+    if (this.spinTime > 0) {
+      this.spinTime = Math.max(0, this.spinTime - dt);
+      inp = { steer: 0, accel: false, brake: false, drift: false, item: false };
+      const keep = Math.exp(-CONFIG.items.spinDrag * dt);
+      this.vx *= keep;
+      this.vz *= keep;
+    }
 
     // ハンドルは急に切り替わらないよう少しずつ近づける
     this.steer += (inp.steer - this.steer) * Math.min(1, c.steerResponse * dt);
@@ -281,6 +308,48 @@ export class Kart {
     this.updateMesh(dt);
   }
 
+  // オンライン対戦: ほかの端末から届いた状態 s に合わせて動かす(自分では物理を計算しない)。
+  // 届くのは 1 秒に 20 回くらいなので、その間は速度で先読みして進め、ずれは少しずつ直す。
+  updateRemote(dt, s) {
+    if (s) {
+      const o = CONFIG.online;
+      const age = Math.min(o.maxPredict, performance.now() / 1000 - s.at); // 届いてからの時間
+      // 届いた位置を、届いてからの時間ぶん速度で先に進めた場所が「今いるはずの場所」
+      const tx = s.x + s.vx * age;
+      const tz = s.z + s.vz * age;
+      this.vx = s.vx;
+      this.vz = s.vz;
+      this.pos.x += this.vx * dt;
+      this.pos.z += this.vz * dt;
+      const ex = tx - this.pos.x;
+      const ez = tz - this.pos.z;
+      if (ex * ex + ez * ez > o.snapDistance * o.snapDistance) {
+        this.pos.x = tx; // 離れすぎていたら一気に合わせる(コース復帰など)
+        this.pos.z = tz;
+      } else {
+        const k = 1 - Math.exp(-o.smoothing * dt); // フレームレートに関係なく同じ速さで近づける
+        this.pos.x += ex * k;
+        this.pos.z += ez * k;
+      }
+      let diff = s.h - this.heading;
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      this.heading += diff * (1 - Math.exp(-o.smoothing * 1.5 * dt));
+
+      this.forwardSpeed = s.fs;
+      this.steer = s.steer;
+      this.onGrass = s.onGrass;
+      if (s.drifting && !this.drifting) this.hopV = Math.sqrt(2 * HOP_GRAVITY * CONFIG.drift.hop); // ドリフト開始の小ジャンプ
+      this.drifting = s.drifting;
+      this.driftDir = s.driftDir;
+      this.driftCharge = s.charge;
+      this.boostTime = s.boost;
+      if (s.spin && this.spinTime <= 0) this.spinTime = CONFIG.items.spinTime; // 見た目のスピン
+      if (!s.spin) this.spinTime = 0;
+      this.trackIndex = this.track.query(this.pos, this.trackIndex).index;
+    }
+    this.updateMesh(dt);
+  }
+
   // 壁に当たったら押し戻して跳ね返す
   collideWalls() {
     const c = CONFIG.kart;
@@ -327,8 +396,17 @@ export class Kart {
     const yawGoal = this.drifting ? -this.driftDir * CONFIG.drift.visualYaw : 0;
     this.driftYaw += (yawGoal - this.driftYaw) * Math.min(1, 10 * dt);
 
+    // スピン中は車体をくるくる回す。終わったら一番近い「正面向き」に戻す
+    if (this.spinTime > 0) {
+      const it = CONFIG.items;
+      this.spinAngle += (dt * it.spinTurns * Math.PI * 2) / it.spinTime;
+    } else if (this.spinAngle !== 0) {
+      const rest = Math.atan2(Math.sin(this.spinAngle), Math.cos(this.spinAngle));
+      this.spinAngle = Math.abs(rest) < 0.01 ? 0 : rest * (1 - Math.min(1, 12 * dt));
+    }
+
     this.mesh.position.set(this.pos.x, this.hopY, this.pos.z);
-    this.mesh.rotation.y = this.heading + this.driftYaw;
+    this.mesh.rotation.y = this.heading + this.driftYaw + this.spinAngle;
 
     const sr = Math.min(1, Math.abs(this.forwardSpeed) / CONFIG.kart.maxSpeed);
     const roll = -this.steer * sr * 0.12; // 曲がるとき外側に傾く
@@ -344,7 +422,9 @@ export class Kart {
   }
 }
 
-// カート同士の当たり判定。重なったら押し離し、ぶつかった向きの速度をはね返す
+// カート同士の当たり判定。重なったら押し離し、ぶつかった向きの速度をはね返す。
+// ほかの端末が動かしているカート(remote)は動かさず、こちらのカートだけをその分押し返す
+// (相手の端末では、相手が自分のカートを押し返す)
 export function collideKarts(karts) {
   const minD = CONFIG.kart.radius * 2;
   for (const k of karts) k.bump = 0;
@@ -356,20 +436,26 @@ export function collideKarts(karts) {
       const dz = b.pos.z - a.pos.z;
       const d2 = dx * dx + dz * dz;
       if (d2 >= minD * minD || d2 < 1e-6) continue;
+      // 動かす割合(ふつうは半分ずつ。片方が remote なら、もう片方が全部動く)
+      const wa = a.remote ? 0 : 1;
+      const wb = b.remote ? 0 : 1;
+      if (wa + wb === 0) continue;
+      const fa = wa / (wa + wb);
+      const fb = wb / (wa + wb);
 
       const d = Math.sqrt(d2);
       const nx = dx / d; // a から b への向き
       const nz = dz / d;
-      const push = (minD - d) / 2; // 重なった分を半分ずつ押し戻す
-      a.pos.x -= nx * push; a.pos.z -= nz * push;
-      b.pos.x += nx * push; b.pos.z += nz * push;
+      const push = minD - d; // 重なった分を押し戻す
+      a.pos.x -= nx * push * fa; a.pos.z -= nz * push * fa;
+      b.pos.x += nx * push * fb; b.pos.z += nz * push * fb;
 
       // 近づく向きに動いていたら、その成分を入れかえるようにはね返す
       const rv = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
       if (rv < 0) {
-        const imp = (-(1 + 0.3) * rv) / 2;
-        a.vx -= nx * imp; a.vz -= nz * imp;
-        b.vx += nx * imp; b.vz += nz * imp;
+        const imp = -(1 + 0.3) * rv;
+        if (wa) { a.vx -= nx * imp * fa; a.vz -= nz * imp * fa; }
+        if (wb) { b.vx += nx * imp * fb; b.vz += nz * imp * fb; }
         a.bump = b.bump = -rv;
       }
     }

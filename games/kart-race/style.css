@@ -179,12 +179,42 @@ body {
   background: rgba(210, 50, 50, 0.45);
 }
 
-/* --- 傾け操作: ◀▶ は使わないので、左下に DRIFT、右下に BRAKE --- */
+/* ITEM: DRIFT の上(右手の親指で届く場所) */
+#controls [data-key="item"] {
+  right: calc(var(--R) + (var(--big) - var(--btn)) / 2);
+  bottom: calc(var(--B) + var(--big) + var(--gap));
+  font-size: calc(var(--btn) * 0.22);
+  background: rgba(255, 190, 0, 0.4);
+}
+
+/* --- 傾け操作: ◀▶ は使わないので、左下に DRIFT、右下に BRAKE(ITEM はその上) --- */
 #controls.tilt [data-key="left"],
 #controls.tilt [data-key="right"] { display: none; }
 
 #controls.tilt [data-key="drift"] { right: auto; left: var(--L); }
 #controls.tilt [data-key="brake"] { right: var(--R); }
+#controls.tilt [data-key="item"] { right: var(--R); bottom: calc(var(--B) + var(--btn) + var(--gap)); }
+
+/* ===== 持っているアイテム ===== */
+.item-slot {
+  position: fixed;
+  top: calc(44px + clamp(30px, 9vmin, 54px) + 8px + env(safe-area-inset-top));
+  left: calc(var(--edge) + env(safe-area-inset-left));
+  width: clamp(44px, 12vmin, 64px);
+  height: clamp(44px, 12vmin, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: clamp(24px, 7vmin, 38px);
+  font-weight: 900;
+  line-height: 1;
+}
+.item-slot.ready { border-color: #ffd60a; box-shadow: 0 0 12px rgba(255, 214, 10, 0.7); }
+.item-slot.dash { color: #4cc9f0; }
+.item-slot.pylon { color: #ff7b1a; }
 
 /* ===== タイトル画面 ===== */
 .overlay {
@@ -369,6 +399,114 @@ body {
 
 .panel .best b { color: #ff5c7a; }
 
+/* ===== オンライン対戦 ===== */
+.online-row { margin-top: 10px; }
+.mode.online {
+  max-width: 372px;
+  border-color: #4cc9f0;
+  background: rgba(76, 201, 240, 0.12);
+}
+.mode.online:active { background: rgba(76, 201, 240, 0.35); }
+
+.field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.panel input {
+  width: 9em;
+  padding: 8px 10px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font: inherit;
+  font-size: 16px;              /* 16px 未満だと iPhone で入力時に拡大されてしまう */
+  user-select: text;
+  -webkit-user-select: text;
+}
+.panel input:focus { outline: none; border-color: #ffd60a; }
+
+.lobby-actions { margin-top: 12px; }
+
+.join-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+}
+.join-row input { width: 7em; text-align: center; letter-spacing: 0.15em; }
+.join-row .mode { flex: 0 0 auto; padding: 8px 18px; }
+
+.link-btn {
+  margin-top: 10px;
+  border: none;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+.room-code { margin-top: 8px; font-size: 15px; }
+.room-code b {
+  margin-left: 6px;
+  font-size: clamp(28px, 8vmin, 40px);
+  letter-spacing: 0.12em;
+  color: #ffd60a;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.panel .room-hint { margin-top: 0; }
+
+/* 部屋の顔ぶれ・ゴール画面の順位: 左にカートの色の丸 */
+.members,
+.finish-list {
+  list-style: none;
+  margin: 8px auto 0;
+  max-width: 260px;
+  text-align: left;
+  font-size: 15px;
+}
+.members li,
+.finish-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+.members li::before,
+.finish-list li::before {
+  content: "";
+  flex: 0 0 12px;
+  height: 12px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--c, #fff);
+}
+.members li span:first-child,
+.finish-list li span:first-child { flex: 1; }
+.members li.cpu { opacity: 0.55; }
+.members li.me,
+.finish-list li.me { color: #ffd60a; font-weight: 800; }
+.finish-list { margin-bottom: 12px; }
+
+.panel .wait { margin-top: 8px; }
+
+.status {
+  margin-top: 8px;
+  min-height: 1.2em;
+  font-size: 13px;
+  color: #ff9db0;
+}
+
 /* ===== 低い画面(横向きのスマホ)ではタイトル・ゴール画面を詰めて表示する ===== */
 .overlay {
   overflow-y: auto;     /* それでも収まらないときはスクロールできるように */
@@ -388,6 +526,10 @@ body {
   .panel .hint { margin-top: 6px; font-size: 11px; }
   .panel .total { margin-top: 2px; }
   .panel .best { margin: 6px 0 8px; }
+  .online-row, .lobby-actions { margin-top: 6px; }
+  .field { margin-top: 6px; }
+  .members, .finish-list { font-size: 13px; margin-top: 4px; }
+  .finish-list { margin-bottom: 8px; }
 }
 
 /* ===== 縦向きの案内(スマホで縦にしているときだけ出す) ===== */

@@ -28,6 +28,7 @@ export class Input {
 
     // ---- キーボード ----
     window.addEventListener('keydown', (e) => {
+      if (e.target.closest && e.target.closest('input, textarea')) return; // 名前などの入力中は操作にしない
       const k = KEYMAP[e.code];
       if (k) { this.keys.add(k); e.preventDefault(); }
     });

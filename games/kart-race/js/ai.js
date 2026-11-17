@@ -38,6 +38,7 @@ export class KartAI {
     this.driftTime = 0;
     this.driftSign = 0;
     this.stuck = 0;         // 動けていない時間
+    this.itemWait = -1;     // アイテムを使うまでの待ち時間(-1 = まだ決めていない)
     this.setLevel(level);
   }
 
@@ -116,6 +117,19 @@ export class KartAI {
       this.respawns = (this.respawns || 0) + 1; // 回数(調整の確認用)
     }
 
-    return { steer, accel: !brake, brake, drift: this.driftHold, item: false };
+    // ---- アイテム: 少し間をおいてから使う。ダッシュはまっすぐな所で使う ----
+    let item = false;
+    if (k.item && k.itemRoll <= 0) {
+      if (this.itemWait < 0) this.itemWait = 0.5 + Math.random() * 2.5;
+      this.itemWait -= dt;
+      if (this.itemWait <= 0 && (k.item !== 'dash' || Math.abs(diffFar) < 0.25)) {
+        item = true;
+        this.itemWait = -1;
+      }
+    } else {
+      this.itemWait = -1;
+    }
+
+    return { steer, accel: !brake, brake, drift: this.driftHold, item };
   }
 }
