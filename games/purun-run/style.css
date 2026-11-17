@@ -1,0 +1,73 @@
+/* ===== 全体：スクロール・拡大・長押しメニュー・文字選択を止める ===== */
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;            /* スクロールさせない */
+  overscroll-behavior: none;   /* 引っぱって更新・バウンドを止める */
+  background: #0b1020;
+}
+body {
+  touch-action: none;                    /* ダブルタップ拡大・ピンチ・スクロールを止める */
+  -webkit-user-select: none; user-select: none;   /* 文字選択を止める */
+  -webkit-touch-callout: none;           /* iOS の長押しメニューを止める */
+  -webkit-tap-highlight-color: transparent;
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  color: #e8ecff;
+}
+
+/* ===== ゲーム画面：中央に置き、比率を保って拡大縮小（サイズは main.js で計算） ===== */
+#screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#game { display: block; }
+
+/* ===== 一覧へ戻るリンク ===== */
+#backBtn {
+  position: fixed; z-index: 20;
+  top: calc(env(safe-area-inset-top) + 8px);
+  left: calc(env(safe-area-inset-left) + 10px);
+  padding: 4px 10px; border-radius: 999px;
+  background: rgba(11, 16, 32, .45); color: #fff;
+  font-size: 13px; font-weight: 700; text-decoration: none;
+}
+
+/* ===== 仮想ボタン ===== */
+#controls { display: none; }
+body.touch #controls { display: block; }   /* タッチ端末と分かったら表示 */
+
+.pad {
+  position: fixed; z-index: 10;
+  bottom: calc(env(safe-area-inset-bottom) + 18px);
+  display: flex; align-items: flex-end; gap: 14px;
+  pointer-events: none;   /* タッチは input.js でまとめて判定する */
+}
+.pad-left  { left:  calc(env(safe-area-inset-left) + 22px); }
+.pad-right { right: calc(env(safe-area-inset-right) + 22px); }
+
+.btn {
+  width: 74px; height: 74px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, .16);
+  border: 2px solid rgba(255, 255, 255, .35);
+  color: rgba(255, 255, 255, .9);
+  font-size: 26px; font-weight: 800;
+  transition: background .06s, transform .06s;
+}
+.btn.big   { width: 92px; height: 92px; font-size: 17px; }
+.btn.small { width: 66px; height: 66px; font-size: 13px; margin-bottom: 40px; }
+.btn.on    { background: rgba(92, 225, 255, .45); transform: scale(.94); }
+
+/* ===== 縦画面の案内（タッチ端末のときだけ） ===== */
+#rotate {
+  display: none;
+  position: fixed; inset: 0; z-index: 100;
+  flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: #0b1020; text-align: center;
+}
+#rotate .phone { font-size: 56px; animation: turn 1.6s ease-in-out infinite; }
+#rotate p { font-size: 18px; font-weight: 700; margin: 0; }
+@keyframes turn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+@media (orientation: portrait) {
+  body.touch #rotate { display: flex; }
+}
