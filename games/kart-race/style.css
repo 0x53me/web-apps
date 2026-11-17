@@ -97,7 +97,7 @@ body {
 .pad-right {
   right: calc(var(--edge) + env(safe-area-inset-right));
   width: calc(var(--btn) * 2.25 + var(--gap));
-  height: calc(var(--btn) * 1.25);
+  height: calc(var(--btn) * 2 + var(--gap));
 }
 
 #controls button {
@@ -136,6 +136,14 @@ body {
   bottom: 0;
   font-size: calc(var(--btn) * 0.2);
   background: rgba(210, 50, 50, 0.45);
+}
+
+/* ドリフトはブレーキの上(アクセルを押したまま別の指で押しやすい位置) */
+#controls [data-key="drift"] {
+  right: calc(var(--btn) * 1.25 + var(--gap));
+  bottom: calc(var(--btn) + var(--gap));
+  font-size: calc(var(--btn) * 0.2);
+  background: rgba(150, 70, 230, 0.45);
 }
 
 /* 傾け操作のときは ◀▶ を隠す */

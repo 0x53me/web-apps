@@ -27,6 +27,8 @@ const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.3, 600);
 const track = new Track(scene);
 const kart = new Kart(scene, track);
 kart.placeAtStart(0);
+// URL に ?debug を付けたときだけ、ブラウザのコンソールからカートの状態を見られるようにする
+if (new URLSearchParams(location.search).has('debug')) window.kart = kart;
 
 // ---- 入力 ----
 const controlsEl = document.getElementById('controls');
@@ -72,7 +74,8 @@ function updateCamera(dt, snap = false) {
   camera.lookAt(lookTarget);
 
   // スピードが出るほど視野を広げてスピード感を出す
-  const sr = Math.max(0, kart.forwardSpeed) / CONFIG.kart.maxSpeed;
+  // (ターボで最高速度を超えると、さらに少し広がる)
+  const sr = Math.min(1.3, Math.max(0, kart.forwardSpeed) / CONFIG.kart.maxSpeed);
   const fov = c.fov + c.fovBoost * sr;
   if (Math.abs(camera.fov - fov) > 0.05) {
     camera.fov = fov;

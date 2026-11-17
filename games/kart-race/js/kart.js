@@ -1,6 +1,9 @@
 // カート1台分の「見た目」と「動き(自作の簡単な物理)」
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+import { KartEffects } from './effects.js';
+
+const HOP_GRAVITY = 30; // ドリフト開始の小ジャンプの重力
 
 // 値 v を target に向けて step だけ近づける(行き過ぎない)
 const approach = (v, target, step) => (v < target ? Math.min(target, v + step) : Math.max(target, v - step));
@@ -102,6 +105,74 @@ export class Kart {
     this.onGrass = false;
     this.wheelSpin = 0;
     this.wallHit = 0;               // 直前に壁に当たった強さ(効果音などで使う)
+
+    // ドリフト
+    this.drifting = false;
+    this.driftDir = 0;              // ドリフトの向き(右 = 1、左 = -1)
+    this.driftCharge = 0;           // ミニターボをためた量(秒)
+    this.driftLocked = false;       // ドリフトが途中で切れたら、ボタンを離すまで再開しない
+    this.driftYaw = 0;              // 見た目だけの車体の向きのずれ
+    this.hopY = 0;                  // 小ジャンプの高さ
+    this.hopV = 0;
+    this.boostTime = 0;             // ターボの残り時間(秒)
+
+    this.fx = new KartEffects(scene, this.mesh);
+  }
+
+  // ためたミニターボの段階(0 = まだ、1〜3)
+  get driftLevel() {
+    const lv = CONFIG.drift.levels;
+    let n = 0;
+    while (n < lv.length && this.driftCharge >= lv[n]) n++;
+    return n;
+  }
+
+  // ターボをかける(ミニターボ・アイテムのダッシュで共通)
+  addBoost(seconds) {
+    this.boostTime = Math.max(this.boostTime, seconds);
+  }
+
+  // ドリフトを始める
+  startDrift(dir) {
+    this.drifting = true;
+    this.driftDir = dir;
+    this.driftCharge = 0;
+    this.hopV = Math.sqrt(2 * HOP_GRAVITY * CONFIG.drift.hop); // この高さまで跳ぶ初速
+  }
+
+  // ドリフトを終える。released = ボタンを離して終えたとき(ミニターボが出る)
+  endDrift(released) {
+    if (released) {
+      const level = this.driftLevel;
+      if (level > 0) this.addBoost(CONFIG.drift.boostTime[level - 1]);
+    }
+    this.drifting = false;
+    this.driftCharge = 0;
+  }
+
+  // ドリフトボタンの状態を見て、ドリフトの開始・継続・終了を決める
+  updateDrift(dt, inp, vf) {
+    const d = CONFIG.drift;
+    if (!inp.drift) {
+      if (this.drifting) this.endDrift(true); // 離したらミニターボ
+      this.driftLocked = false;
+    } else if (!this.drifting && !this.driftLocked && Math.abs(inp.steer) > 0.3 && vf > d.minSpeed) {
+      // 押しながらハンドルを切っていて、十分な速さがあればドリフト開始
+      this.startDrift(Math.sign(inp.steer));
+    }
+
+    if (!this.drifting) return;
+
+    // 遅くなりすぎたらドリフト終了(ミニターボなし)
+    if (vf < d.minSpeed * 0.7) {
+      this.endDrift(false);
+      this.driftLocked = true;
+      return;
+    }
+    // 内側にハンドルを切っているほど早くたまる。芝生ではたまらない
+    if (!this.onGrass) {
+      this.driftCharge += dt * (0.7 + 0.6 * Math.max(0, this.steer * this.driftDir));
+    }
   }
 
   // スタート位置に並べる。slot = グリッドの何番目か(0から)
@@ -117,6 +188,8 @@ export class Kart {
     this.heading = Math.atan2(tan.x, tan.z);
     this.vx = this.vz = this.forwardSpeed = this.steer = 0;
     this.trackIndex = -1;
+    this.drifting = false;
+    this.driftCharge = this.driftYaw = this.hopY = this.hopV = this.boostTime = 0;
     this.updateMesh(0);
   }
 
@@ -137,10 +210,20 @@ export class Kart {
     const info = this.track.query(this.pos, this.trackIndex);
     this.trackIndex = info.index;
     this.onGrass = Math.abs(info.offset) > this.track.halfWidth;
-    const maxF = this.onGrass ? c.grassMaxSpeed : c.maxSpeed;
+
+    // ターボ中は最高速度が上がり、芝生でも減速しない
+    const boosting = this.boostTime > 0;
+    if (boosting) this.boostTime = Math.max(0, this.boostTime - dt);
+    const maxF = boosting ? c.maxSpeed * CONFIG.boost.speedMul
+      : (this.onGrass ? c.grassMaxSpeed : c.maxSpeed);
+
+    // ドリフトの開始・終了
+    this.updateDrift(dt, inp, vf);
 
     // アクセル・ブレーキ
-    if (inp.accel && !inp.brake) {
+    if (boosting) {
+      vf = Math.min(maxF, vf + CONFIG.boost.accel * dt); // ターボはアクセルを押していなくても加速
+    } else if (inp.accel && !inp.brake) {
       if (vf < 0) vf = Math.min(0, vf + c.brake * dt);        // バック中ならまず止まる
       else if (vf < maxF) vf = Math.min(maxF, vf + c.accel * dt);
     } else if (inp.brake && !inp.accel) {
@@ -149,18 +232,27 @@ export class Kart {
     } else {
       vf = approach(vf, 0, c.coastDrag * dt);                 // 何も押していないと自然に減速
     }
-    if (vf > maxF) vf = approach(vf, maxF, c.grassDrag * dt); // 芝生に入ると強く減速
+    // 最高速度を超えていたら減速(芝生に入ったときは強く、ターボが切れたときはゆるやかに)
+    if (vf > maxF) vf = approach(vf, maxF, (this.onGrass ? c.grassDrag : c.overSpeedDrag) * dt);
 
     // ハンドル: 遅いときは曲がれず、速すぎると少し曲がりにくい
     const speedAbs = Math.abs(vf);
     const turnFactor = Math.min(1, speedAbs / c.turnFullSpeed)
       * (1 - c.highSpeedTurnLoss * Math.min(1, speedAbs / c.maxSpeed));
-    this.heading -= this.steer * c.turnSpeed * turnFactor * Math.sign(vf) * dt;
+    let steer = this.steer;
+    if (this.drifting) {
+      // ドリフト中はずっとドリフトの向きに曲がり続ける。
+      // 内側に切ると鋭く、外側に切るとゆるく曲がる
+      const d = CONFIG.drift;
+      const t = (this.steer * this.driftDir + 1) / 2; // 外側いっぱい=0 〜 内側いっぱい=1
+      steer = this.driftDir * (d.steerMin + (d.steerMax - d.steerMin) * t);
+    }
+    this.heading -= steer * c.turnSpeed * turnFactor * Math.sign(vf) * dt;
 
-    // 新しい向きで速度を組み立て直す。横すべりはグリップで減らす
+    // 新しい向きで速度を組み立て直す。横すべりはグリップで減らす(ドリフト中は滑りやすい)
     fx = Math.sin(this.heading);
     fz = Math.cos(this.heading);
-    vl *= Math.exp(-c.grip * dt);
+    vl *= Math.exp(-(this.drifting ? CONFIG.drift.grip : c.grip) * dt);
     this.vx = fx * vf - fz * vl;
     this.vz = fz * vf + fx * vl;
 
@@ -209,8 +301,18 @@ export class Kart {
 
   // 見た目(位置・向き・車体の傾き・タイヤの回転)を更新する
   updateMesh(dt) {
-    this.mesh.position.set(this.pos.x, 0, this.pos.z);
-    this.mesh.rotation.y = this.heading;
+    // 小ジャンプ
+    if (this.hopY > 0 || this.hopV > 0) {
+      this.hopV -= HOP_GRAVITY * dt;
+      this.hopY += this.hopV * dt;
+      if (this.hopY <= 0) { this.hopY = 0; this.hopV = 0; }
+    }
+    // ドリフト中は車体を内側に向けて、滑っている感じを出す
+    const yawGoal = this.drifting ? -this.driftDir * CONFIG.drift.visualYaw : 0;
+    this.driftYaw += (yawGoal - this.driftYaw) * Math.min(1, 10 * dt);
+
+    this.mesh.position.set(this.pos.x, this.hopY, this.pos.z);
+    this.mesh.rotation.y = this.heading + this.driftYaw;
 
     const sr = Math.min(1, Math.abs(this.forwardSpeed) / CONFIG.kart.maxSpeed);
     const roll = -this.steer * sr * 0.12; // 曲がるとき外側に傾く
@@ -221,5 +323,7 @@ export class Kart {
     this.wheelSpin += (this.forwardSpeed * dt) / WHEEL_R;
     for (const w of this.wheels) w.rotation.x = this.wheelSpin;
     for (const p of this.frontPivots) p.rotation.y = -this.steer * 0.45;
+
+    this.fx.update(dt, this);
   }
 }
