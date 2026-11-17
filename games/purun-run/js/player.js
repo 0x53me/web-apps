@@ -30,6 +30,21 @@ class Player {
     this.prevY = y;             // 1つ前の更新での y（敵を「上から」踏んだかの判定に使う）
     this.dead = false;          // やられたか
     this.deadT = 0;             // やられてからの時間
+    this.headHit = null;        // 頭でブロックを叩いたら { col, row } が入る（main.js が処理する）
+    this.shield = false;        // あわシールドを持っているか
+    this.invincible = 0;        // 無敵の残り時間（シールドが割れた直後など）
+  }
+
+  // 敵に横から当たった：シールドがあれば割れるだけ。なければやられる
+  hurt() {
+    if (this.dead || this.invincible > 0) return 'safe';
+    if (this.shield) {
+      this.shield = false;
+      this.invincible = CONFIG.HURT_INVINCIBLE;
+      return 'shield';
+    }
+    this.die();
+    return 'dead';
   }
 
   // 敵に横から当たった：上に跳ねてから画面の下へ落ちていく
@@ -54,6 +69,7 @@ class Player {
   update(dt, stage) {
     this.t += dt;
     this.prevY = this.y;
+    this.invincible = Math.max(0, this.invincible - dt);
 
     // やられた後は、地形を無視して落ちていくだけ
     if (this.dead) {
@@ -174,16 +190,29 @@ class Player {
   resolveY(sy, stage) {
     const T = CONFIG.TILE;
     const { c0, c1, r0, r1 } = this.overlapRange();
+
+    if (sy < 0) {
+      // 上がっていた → 頭の上のマスを調べる。2マスにまたがっていたら、体の中心に近い方を「叩いた」ことにする
+      const center = this.x + this.w / 2;
+      let hitCol = null;
+      for (let c = c0; c <= c1; c++) {
+        if (!stage.isSolid(c, r0)) continue;
+        if (hitCol === null || Math.abs((c + 0.5) * T - center) < Math.abs((hitCol + 0.5) * T - center)) hitCol = c;
+      }
+      if (hitCol !== null) {
+        this.y = (r0 + 1) * T;                    // 天井に頭をぶつけて止まる
+        this.vy = 0;
+        this.jumping = false;
+        if (!this.headHit) this.headHit = { col: hitCol, row: r0 };
+      }
+      return;
+    }
+
     for (let r = r0; r <= r1; r++) {
       for (let c = c0; c <= c1; c++) {
         if (!stage.isSolid(c, r)) continue;
-        if (sy > 0) {
-          this.y = r * T - this.h;                // 落ちていた → 床の上に立つ
-          this.onGround = true;
-        } else {
-          this.y = (r + 1) * T;                   // 上がっていた → 天井に頭をぶつける
-          this.jumping = false;
-        }
+        this.y = r * T - this.h;                  // 落ちていた → 床の上に立つ
+        this.onGround = true;
         this.vy = 0;
         return;
       }
@@ -195,6 +224,9 @@ class Player {
   draw(ctx, camX, camY) {
     const cx = this.x + this.w / 2 - camX;   // 足元の中心
     const by = this.y + this.h - camY;
+
+    // 無敵中はチカチカ点滅させる（描かないフレームを作る）
+    if (this.invincible > 0 && Math.floor(this.invincible * 16) % 2 === 0) return;
 
     // 歩いているときは少しぷるぷる揺れる
     const moving = this.onGround && Math.abs(this.vx) > 20;
@@ -258,6 +290,11 @@ class Player {
       ctx.beginPath();
       ctx.ellipse(ex + off, ey + 6, 3.5, 2, 0, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // あわシールド（体のまわりのシャボン玉）
+    if (this.shield && !this.dead) {
+      drawBubble(ctx, cx, by - this.h / 2 - 1, Math.max(this.w, this.h) / 2 + 9 + Math.sin(this.t * 5) * 0.8, this.t);
     }
 
     // 開発用：当たり判定の四角
