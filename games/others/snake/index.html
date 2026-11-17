@@ -24,6 +24,7 @@
   <button data-d="left">◀</button><button data-d="down">▼</button><button data-d="right">▶</button>
 </div>
 
+<script src="../../share.js"></script>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -52,6 +53,7 @@ function placeFood() {
 
 function start() {
   clearInterval(timer);
+  GameShare.hide();
   reset();
   running = true;
   timer = setInterval(step, 120);
@@ -76,6 +78,7 @@ function gameOver() {
   ctx.fillStyle = '#cdd6f4';
   ctx.font = '18px sans-serif';
   ctx.fillText('タップ / スペースキーでリスタート', canvas.width / 2, canvas.height / 2 + 24);
+  GameShare.show(`🐍 スネークゲームで ${score} 個のエサを食べた！（長さ ${snake.length}）`);
 }
 
 function step() {

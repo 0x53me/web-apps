@@ -6,6 +6,10 @@
 - `index.html`: 全ゲームの一覧トップページ。ゲームを追加したら `GAMES` 配列に1行足す
 - 新しいゲームは `games/<ゲーム名>/` として追加し、本体はフォルダ直下の `index.html` に置く
 - 各ゲームには一覧へ戻るリンク(`../`)を付け、スマホのタッチ操作でも遊べるようにする
+- `share.js`: 結果シェアの共通スクリプト。ゲーム終了時に結果テキスト+ページURLを共有(Web Share API、使えなければクリップボードにコピー)
+  - オーバーレイ型(orbit-dash など): GAME OVER 画面のボタンから `GameShare.share(text)` を呼ぶ
+  - それ以外: 終了時に `GameShare.show(text)` で画面下にボタンを出し、リスタート時に `GameShare.hide()`
+  - 新しいゲームにも付ける。読み込みは `<script src="../share.js">`(others 配下は `../../share.js`)
 
 ## 収録ゲーム
 - `orbit-dash/`: Orbit Dash(タップで回転方向を反転)

@@ -37,6 +37,7 @@
   <button data-a="drop" aria-label="一気に落とす">⤓</button><button data-a="pause" aria-label="一時停止">⏸</button>
 </div>
 
+<script src="../../share.js"></script>
 <script>
 const COLS = 10, ROWS = 20, B = 24;
 const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
@@ -144,6 +145,7 @@ function updateInfo() {
 function start() {
   board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
   score = 0; lines = 0; level = 1; bag = []; nextType = null;
+  GameShare.hide();
   updateInfo();
   state = 'play';
   spawn();
@@ -158,6 +160,7 @@ function gameOver() {
     try { localStorage.setItem('tetrisBest', best); } catch (e) {}
   }
   draw();
+  GameShare.show(`🧱 テトリス風で ${score} 点！（${lines} ライン / レベル ${level}）`);
 }
 function togglePause() {
   if (state === 'play') { state = 'pause'; clearInterval(timer); draw(); }

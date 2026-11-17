@@ -64,6 +64,12 @@
   }
   button.main:active { transform: scale(.96); }
   a.back { color: var(--muted); font-size: 14px; margin-top: 8px; }
+  button.share {
+    font: inherit; font-size: 15px; font-weight: 700; padding: 10px 26px;
+    border: 1px solid rgba(255,255,255,.25); border-radius: 999px;
+    background: rgba(255,255,255,.06); color: var(--fg);
+  }
+  button.share:active { transform: scale(.96); }
 </style>
 </head>
 <body>
@@ -95,9 +101,11 @@
   <div class="record hidden" id="newRecord">NEW RECORD!</div>
   <div class="sub" id="finalInfo"></div>
   <button class="main" id="retryBtn">もう一度</button>
+  <button class="share" id="shareBtn">📤 結果をシェア</button>
   <a class="back" href="../">← ゲーム一覧</a>
 </div>
 
+<script src="../share.js"></script>
 <script>
 (() => {
   const cv = document.getElementById('c');
@@ -219,6 +227,8 @@
   $('startBtn').addEventListener('click', start);
   $('retryBtn').addEventListener('click', start);
   $('resumeBtn').addEventListener('click', resume);
+  let shareText = '';
+  $('shareBtn').addEventListener('click', e => { e.currentTarget.blur(); GameShare.share(shareText); });
   $('pauseBtn').addEventListener('pointerdown', e => { e.stopPropagation(); });
   $('pauseBtn').addEventListener('click', pause);
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
@@ -240,6 +250,7 @@
     $('finalScore').textContent = score;
     $('newRecord').classList.toggle('hidden', !isRecord || score === 0);
     $('finalInfo').textContent = `生存 ${t.toFixed(1)} 秒 ・ BEST ${best}`;
+    shareText = `🚦 Color Gate で ${score} ゲート通過！（生存 ${t.toFixed(1)} 秒）`;
     updateHud();
     show('over');
   }

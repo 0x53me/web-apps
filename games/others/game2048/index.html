@@ -23,6 +23,7 @@
 <div id="info">スコア: <span id="score">0</span> / ハイスコア: <span id="best">0</span></div>
 <div id="board"><div id="msg"><span id="msgtext"></span><button id="retry">もう一度</button></div></div>
 <p>矢印キー / WASD / スワイプで操作。同じ数字をぶつけて2048を目指そう</p>
+<script src="../../share.js"></script>
 <script>
 const SIZE = 4;
 const COLORS = { 0:'#313244', 2:'#cdd6f4', 4:'#b4befe', 8:'#fab387', 16:'#f9a56b', 32:'#f38ba8', 64:'#eb6f92',
@@ -42,6 +43,7 @@ function init() {
   grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
   score = 0; over = false; won = false;
   msg.style.display = 'none';
+  GameShare.hide();
   addTile(); addTile(); render();
 }
 function addTile() {
@@ -103,7 +105,13 @@ function canMove() {
   }
   return false;
 }
-function show(t) { el('msgtext').textContent = t; msg.style.display = 'flex'; }
+function show(t) {
+  el('msgtext').textContent = t; msg.style.display = 'flex';
+  const maxTile = Math.max(...grid.flat());
+  GameShare.show(won
+    ? `🔢 2048 を達成！ スコア ${score}`
+    : `🔢 2048 で スコア ${score}！（最大タイル ${maxTile}）`);
+}
 
 document.addEventListener('keydown', e => {
   const m = { ArrowLeft:'left', a:'left', ArrowRight:'right', d:'right', ArrowUp:'up', w:'up', ArrowDown:'down', s:'down' };

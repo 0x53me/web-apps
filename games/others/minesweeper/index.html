@@ -38,6 +38,7 @@
 <div id="msg"></div>
 <div id="board"></div>
 <p>左クリック/タップで開く、右クリック・長押し・旗モードで旗。数字の周りの旗数が合うと、数字をクリックで周囲を一気に開けます。<br>最初の1手は必ず安全です。ベストタイムはレベルごとに保存されます。</p>
+<script src="../../share.js"></script>
 <script>
 const LEVELS = [{ w: 9, h: 9, m: 10 }, { w: 16, h: 16, m: 40 }, { w: 24, h: 16, m: 70 }];
 const el = id => document.getElementById(id);
@@ -53,6 +54,7 @@ function init() {
   cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, n: 0 }));
   started = false; over = false; flags = 0; opened = 0; secs = 0;
   clearInterval(timer);
+  GameShare.hide();
   el('time').textContent = 0; el('left').textContent = M;
   const b = getBest();
   el('msg').textContent = b ? 'ベスト: ' + b + '秒' : '';
@@ -145,7 +147,9 @@ function check() {
   let t = 'クリア! ' + secs + '秒';
   if (!b || secs < b) { t += '(ベスト更新!)'; try { localStorage.setItem(bestKey(), secs); } catch (e) {} }
   el('msg').textContent = t; el('msg').style.color = '#a6e3a1';
+  GameShare.show(`💣 マインスイーパー（${levelName()}）を ${secs} 秒でクリア！`);
 }
+function levelName() { return ['初級', '中級', '上級'][levelIdx]; }
 function lose(hit) {
   over = true; clearInterval(timer);
   cells.forEach((c, i) => {
@@ -153,6 +157,8 @@ function lose(hit) {
     else if (!c.mine && c.flag) { c.el.className = 'c wrong'; c.el.textContent = '❌'; }
   });
   el('msg').textContent = 'ゲームオーバー'; el('msg').style.color = '#f38ba8';
+  const safe = W * H - M, done = cells.filter(c => c.open && !c.mine).length;
+  GameShare.show(`💣 マインスイーパー（${levelName()}）で地雷を踏んだ…（${done}/${safe} マス開けた）`);
 }
 
 el('level').addEventListener('change', init);

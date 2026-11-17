@@ -12,4 +12,4 @@
 ## ルール
 - 返答・コメントは日本語
 - 外部ライブラリは追加しない(必要なら先に相談)
-- ゲーム本体はこのフォルダ直下の `index.html`(GitHub Pages で `/web-apps/games/snake/` として公開)
+- ゲーム本体はこのフォルダ直下の `index.html`(GitHub Pages で `/web-apps/games/others/snake/` として公開)
