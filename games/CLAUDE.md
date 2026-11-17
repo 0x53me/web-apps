@@ -10,6 +10,7 @@
 ## 収録ゲーム
 - `orbit-dash/`: Orbit Dash(タップで回転方向を反転)
 - `color-gate/`: Color Gate(タップで色を切り替えてゲートを通過)
+- `tsumiage/`: ツミアゲ(タップでブロックを落として積み上げる)
 - `snake/`: スネークゲーム
 - `tetris/`: テトリス風ゲーム
 - `breakout/`: ブロック崩し
