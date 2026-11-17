@@ -187,7 +187,7 @@ export class Kart {
     this.pos.set(p.x + r.x * col * 3.5, 0, p.z + r.z * col * 3.5);
     this.heading = Math.atan2(tan.x, tan.z);
     this.vx = this.vz = this.forwardSpeed = this.steer = 0;
-    this.trackIndex = -1;
+    this.trackIndex = t.query(this.pos).index;
     this.drifting = false;
     this.driftCharge = this.driftYaw = this.hopY = this.hopV = this.boostTime = 0;
     this.updateMesh(0);

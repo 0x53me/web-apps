@@ -124,7 +124,12 @@ const GAMES = [
     section: 'main', path: 'kart-race/', icon: '🏎️', name: 'ターボサーキット',
     desc: '3Dのカートでコースを走ろう。スマホはボタンか傾けて操作',
     tags: ['レース', '3D', 'アクション'],
-    best: () => null, // ベストタイムは周回機能を入れたら表示する
+    best() { // 3周の合計のベストタイム(秒)を "BEST 1:23.45" の形で
+      const s = _num('kart-race-best-total');
+      if (!(s > 0)) return null;
+      const cs = Math.floor(s * 100);
+      return `BEST ${Math.floor(cs / 6000)}:${String(Math.floor(cs / 100) % 60).padStart(2, '0')}.${String(cs % 100).padStart(2, '0')}`;
+    },
     thumb(c, w, h) {
       const sky = c.createLinearGradient(0, 0, 0, h * 0.45);
       sky.addColorStop(0, '#5bb8f0'); sky.addColorStop(1, '#bfe6ff');

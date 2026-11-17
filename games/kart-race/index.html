@@ -25,7 +25,30 @@
 
   <!-- レース中の表示 -->
   <div id="hud" hidden>
+    <div class="race-info">
+      <div id="lap" class="lap">LAP 1/3</div>
+      <div id="time" class="time">0:00.00</div>
+      <ol id="lap-list" class="lap-list"></ol>
+    </div>
     <div class="speed"><span id="speed-val">0</span><small>km/h</small></div>
+  </div>
+
+  <!-- 画面中央の短いメッセージと、逆走の警告 -->
+  <div id="message" class="message" hidden></div>
+  <div id="wrong-way" class="wrong-way" hidden>⚠ 逆走中</div>
+
+  <!-- ゴール画面(順位つきのリザルトは後で作り込む) -->
+  <div id="finish" class="overlay" hidden>
+    <div class="panel">
+      <h1>FINISH!</h1>
+      <p class="total">TOTAL <span id="finish-total">0:00.00</span></p>
+      <ol id="finish-laps" class="finish-laps"></ol>
+      <p id="finish-best" class="best"></p>
+      <div class="modes">
+        <button type="button" id="btn-retry" class="mode">もう一度</button>
+        <button type="button" id="btn-title" class="mode">タイトルへ</button>
+      </div>
+    </div>
   </div>
 
   <!-- スマホ用の操作ボタン(data-key が操作の種類)。アクセルは自動なのでボタンはない -->

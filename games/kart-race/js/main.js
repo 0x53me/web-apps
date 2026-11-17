@@ -4,6 +4,7 @@ import { CONFIG } from './config.js';
 import { Track } from './track.js';
 import { Kart } from './kart.js';
 import { Input } from './input.js';
+import { LapCounter, formatTime } from './race.js';
 
 // ---- 画面の準備 ----
 const canvas = document.getElementById('game');
@@ -27,19 +28,41 @@ const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.3, 600);
 const track = new Track(scene);
 const kart = new Kart(scene, track);
 kart.placeAtStart(0);
-// URL に ?debug を付けたときだけ、ブラウザのコンソールからカートの状態を見られるようにする
-if (new URLSearchParams(location.search).has('debug')) window.kart = kart;
+const laps = new LapCounter(track);
+// URL に ?debug を付けたときだけ、ブラウザのコンソールから状態を見られるようにする
+if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { kart, laps });
 
 // ---- 入力 ----
 const controlsEl = document.getElementById('controls');
 const input = new Input(controlsEl);
 
 // ---- 画面の要素 ----
-const titleEl = document.getElementById('title');
-const hudEl = document.getElementById('hud');
-const speedEl = document.getElementById('speed-val');
+const $ = (id) => document.getElementById(id);
+const titleEl = $('title');
+const hudEl = $('hud');
+const speedEl = $('speed-val');
+const lapEl = $('lap');
+const timeEl = $('time');
+const lapListEl = $('lap-list');
+const wrongWayEl = $('wrong-way');
+const messageEl = $('message');
+const finishEl = $('finish');
 
-let running = false; // レース中かどうか
+// state: 'title'(タイトル画面) / 'race'(レース中) / 'finish'(ゴール後)
+let state = 'title';
+let raceTime = 0;    // レース開始からの時間(秒)
+let wrongWay = 0;    // 逆向きに走り続けている時間
+let lastMode = 'buttons';
+
+// ---- ベストタイムの保存(localStorage)。使えない環境でも止まらないように try で囲む ----
+const BEST_TOTAL_KEY = 'kart-race-best-total';
+const BEST_LAP_KEY = 'kart-race-best-lap';
+function loadBest(key) {
+  try { return Number(localStorage.getItem(key)) || 0; } catch { return 0; }
+}
+function saveBest(key, sec) {
+  try { localStorage.setItem(key, String(sec)); } catch { /* 保存できなくても続ける */ }
+}
 
 // ---- 画面サイズが変わったとき ----
 function resize() {
@@ -84,26 +107,131 @@ function updateCamera(dt, snap = false) {
 }
 updateCamera(0, true);
 
+// ---- 画面中央に短いメッセージを出す(「LAP 2」「FINAL LAP」など) ----
+let messageTimer = 0;
+function showMessage(text, seconds = 1.5) {
+  messageEl.textContent = text;
+  messageEl.hidden = false;
+  messageEl.classList.remove('pop');
+  void messageEl.offsetWidth; // アニメーションを最初から再生し直すため
+  messageEl.classList.add('pop');
+  messageTimer = seconds;
+}
+
+// ---- 逆走の判定: カートの向きとコースの向きが逆で、しばらく走り続けたら警告 ----
+function updateWrongWay(dt) {
+  const t = track.tangents[kart.trackIndex];
+  const dot = Math.sin(kart.heading) * t.x + Math.cos(kart.heading) * t.z;
+  const goingBack = dot < -0.3 && Math.abs(kart.forwardSpeed) > 3;
+  wrongWay = goingBack ? wrongWay + dt : 0;
+  wrongWayEl.hidden = wrongWay < CONFIG.race.wrongWayTime;
+}
+
+// ---- 周回の表示 ----
+let lastHud = '';
+function updateHud() {
+  const kmh = Math.round(Math.abs(kart.forwardSpeed) * 3.6);
+  const lapText = `LAP ${laps.lap}/${CONFIG.race.laps}`;
+  const timeText = formatTime(raceTime);
+  // 変わったときだけ書きかえる(毎フレーム DOM を触ると重くなるため)
+  const key = kmh + lapText + timeText;
+  if (key === lastHud) return;
+  lastHud = key;
+  speedEl.textContent = kmh;
+  lapEl.textContent = lapText;
+  timeEl.textContent = timeText;
+}
+
+function renderLapList() {
+  lapListEl.innerHTML = laps.lapTimes
+    .map((t, i) => `<li>LAP${i + 1} ${formatTime(t)}</li>`)
+    .join('');
+}
+
+// ---- ゴールしたとき ----
+function finishRace() {
+  state = 'finish';
+  wrongWayEl.hidden = true;
+  const total = laps.finishTime;
+  const bestLap = Math.min(...laps.lapTimes);
+
+  // ベストタイムの更新
+  const oldTotal = loadBest(BEST_TOTAL_KEY);
+  const oldLap = loadBest(BEST_LAP_KEY);
+  const newTotal = !oldTotal || total < oldTotal;
+  const newLap = !oldLap || bestLap < oldLap;
+  if (newTotal) saveBest(BEST_TOTAL_KEY, total);
+  if (newLap) saveBest(BEST_LAP_KEY, bestLap);
+
+  $('finish-total').textContent = formatTime(total);
+  $('finish-laps').innerHTML = laps.lapTimes
+    .map((t, i) => `<li><span>LAP ${i + 1}</span>${formatTime(t)}${t === bestLap ? ' ★' : ''}</li>`)
+    .join('');
+  $('finish-best').innerHTML =
+    `ベスト合計 ${formatTime(newTotal ? total : oldTotal)}${newTotal ? ' <b>NEW!</b>' : ''}<br>` +
+    `ベストラップ ${formatTime(newLap ? bestLap : oldLap)}${newLap ? ' <b>NEW!</b>' : ''}`;
+
+  showMessage('FINISH!', 2);
+  setTimeout(() => {
+    if (state !== 'finish') return;
+    controlsEl.hidden = true;
+    finishEl.hidden = false;
+  }, 1800);
+}
+
 // ---- メインループ ----
 const clock = new THREE.Clock();
-let lastSpeed = -1;
+const COAST = { steer: 0, accel: false, brake: false, drift: false, item: false }; // ゴール後は手を離した状態
 
 function loop() {
   // 前のフレームからの経過時間。大きすぎるときは上限で切る
   const dt = Math.min(clock.getDelta(), CONFIG.maxDelta);
 
-  if (running) {
+  if (state === 'race') {
+    raceTime += dt;
     kart.update(dt, input.getState());
-    const kmh = Math.round(Math.abs(kart.forwardSpeed) * 3.6);
-    if (kmh !== lastSpeed) { // 変わったときだけ書きかえる(軽くするため)
-      speedEl.textContent = kmh;
-      lastSpeed = kmh;
+    const ev = laps.update(kart, raceTime);
+    if (ev === 'lap') {
+      renderLapList();
+      showMessage(laps.lap === CONFIG.race.laps ? 'FINAL LAP' : `LAP ${laps.lap}`);
+    } else if (ev === 'finish') {
+      renderLapList();
+      finishRace();
     }
+    updateWrongWay(dt);
+    updateHud();
+  } else if (state === 'finish') {
+    kart.update(dt, COAST); // ゴール後はゆっくり止まる
   }
+
+  if (messageTimer > 0) {
+    messageTimer -= dt;
+    if (messageTimer <= 0) messageEl.hidden = true;
+  }
+
   updateCamera(dt);
   renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(loop);
+
+// ---- レースを始める(最初から) ----
+function beginRace() {
+  kart.placeAtStart(0);
+  updateCamera(0, true);
+  raceTime = 0;
+  wrongWay = 0;
+  laps.reset(0);
+  laps.update(kart, 0); // 今いる位置を覚えさせる
+  renderLapList();
+  lastHud = '';
+  updateHud();
+  finishEl.hidden = true;
+  wrongWayEl.hidden = true;
+  hudEl.hidden = false;
+  controlsEl.hidden = !input.autoAccel; // 画面のボタンはスマホのときだけ
+  state = 'race';
+  showMessage('GO!', 1);
+}
 
 // ---- タイトル画面: 操作方法を選んでスタート ----
 async function start(mode) {
@@ -125,19 +253,30 @@ async function start(mode) {
     }
   }
 
+  lastMode = mode;
   input.mode = mode;
   input.autoAccel = isTouch; // スマホはアクセル自動(右手の親指をドリフトに使えるように)
   controlsEl.classList.toggle('tilt', mode === 'tilt');
   titleEl.hidden = true;
-  hudEl.hidden = false;
-  controlsEl.hidden = !isTouch;
-  kart.placeAtStart(0);
-  updateCamera(0, true);
-  running = true;
+  beginRace();
 }
 
-document.getElementById('btn-buttons').addEventListener('click', () => start('buttons'));
-document.getElementById('btn-tilt').addEventListener('click', () => start('tilt'));
+// ---- タイトルに戻る ----
+function backToTitle() {
+  state = 'title';
+  finishEl.hidden = true;
+  hudEl.hidden = true;
+  controlsEl.hidden = true;
+  messageEl.hidden = true;
+  kart.placeAtStart(0);
+  updateCamera(0, true);
+  titleEl.hidden = false;
+}
+
+$('btn-buttons').addEventListener('click', () => start('buttons'));
+$('btn-tilt').addEventListener('click', () => start('tilt'));
+$('btn-retry').addEventListener('click', () => { input.mode = lastMode; beginRace(); });
+$('btn-title').addEventListener('click', backToTitle);
 
 // ---- スマホでの誤操作を防ぐ ----
 document.addEventListener('contextmenu', (e) => e.preventDefault());      // 長押しメニュー

@@ -41,6 +41,13 @@ export const CONFIG = {
     colors: [0xffffff, 0x4cc9f0, 0xffc300, 0xff4fd8],
   },
 
+  // ---- レース ----
+  race: {
+    laps: 3,               // 何周でゴールか
+    checkpoints: 10,       // コースをいくつの区間に分けてチェックするか
+    wrongWayTime: 0.8,     // 逆向きにこの秒数走り続けたら「逆走」と表示
+  },
+
   // ---- ターボ(ミニターボ・アイテムのダッシュで共通) ----
   boost: {
     speedMul: 1.28,        // ターボ中の最高速度の倍率
