@@ -11,11 +11,12 @@
 - `orbit-dash/`: Orbit Dash(タップで回転方向を反転)
 - `color-gate/`: Color Gate(タップで色を切り替えてゲートを通過)
 - `tsumiage/`: ツミアゲ(タップでブロックを落として積み上げる)
-- `snake/`: スネークゲーム
-- `tetris/`: テトリス風ゲーム
-- `breakout/`: ブロック崩し
-- `game2048/`: 2048
-- `minesweeper/`: マインスイーパー
+- `others/`: その他ゲーム(一覧ページ `others/index.html` から開く。定番ゲームはここに置き、`others/index.html` の `GAMES` 配列に足す)
+  - `others/snake/`: スネークゲーム
+  - `others/tetris/`: テトリス風ゲーム
+  - `others/breakout/`: ブロック崩し
+  - `others/game2048/`: 2048
+  - `others/minesweeper/`: マインスイーパー
 
 ## 共通ルール
 - 返答・コメントは日本語
