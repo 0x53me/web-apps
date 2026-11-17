@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <!-- user-scalable=no などでピンチ拡大を止める -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1b1b2f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>ターボサーキット</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js をバージョン固定で CDN から読み込む("three" という名前で import できるようにする) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 3D の描画先 -->
+  <canvas id="game"></canvas>
+
+  <a class="back" href="../">← 一覧</a>
+
+  <!-- レース中の表示 -->
+  <div id="hud" hidden>
+    <div class="speed"><span id="speed-val">0</span><small>km/h</small></div>
+  </div>
+
+  <!-- スマホ用の操作ボタン(data-key が操作の種類) -->
+  <div id="controls" hidden>
+    <div class="pad pad-left">
+      <button type="button" data-key="left" aria-label="左">◀</button>
+      <button type="button" data-key="right" aria-label="右">▶</button>
+    </div>
+    <div class="pad pad-right">
+      <button type="button" data-key="brake" aria-label="ブレーキ">BRAKE</button>
+      <button type="button" data-key="accel" aria-label="アクセル">GO</button>
+    </div>
+  </div>
+
+  <!-- タイトル画面 -->
+  <div id="title" class="overlay">
+    <div class="panel">
+      <h1>ターボサーキット</h1>
+      <p class="sub">3D カートレース</p>
+      <p class="label">操作方法をえらんでスタート</p>
+      <div class="modes">
+        <button type="button" id="btn-buttons" class="mode">
+          <span class="ic">🎮</span>ボタン操作
+        </button>
+        <button type="button" id="btn-tilt" class="mode">
+          <span class="ic">📱</span>傾け操作
+        </button>
+      </div>
+      <p class="hint">PC: 矢印キー / WASD で操作</p>
+    </div>
+  </div>
+
+  <!-- 縦向きのときの案内 -->
+  <div id="rotate" class="overlay">
+    <div class="rotate-msg">
+      <div class="rotate-ic">📱</div>
+      横向きにして遊んでください
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

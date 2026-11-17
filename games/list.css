@@ -6,14 +6,22 @@ body {
   font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   padding: calc(env(safe-area-inset-top) + 24px) 16px 32px;
 }
-main { max-width: 640px; margin: 0 auto; }
+main { max-width: 960px; margin: 0 auto; }
 a.back { color: var(--muted); font-size: 14px; text-decoration: none; display: inline-block; margin-bottom: 12px; }
 h1 { font-size: 28px; margin: 0 0 4px; }
-p.lead { color: var(--muted); margin: 0 0 16px; }
+p.lead { color: var(--muted); margin: 0 0 8px; }
 
-/* タグ絞り込み */
-#tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+/* タグ絞り込み：1行で横スクロール、スクロールしても上に残る */
+#tags {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto;
+  margin: 0 -16px 14px; padding: 10px 16px;
+  background: var(--bg);
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+#tags::-webkit-scrollbar { display: none; }
 .chip {
+  flex: none; white-space: nowrap;
   font: inherit; font-size: 14px; font-weight: 700; padding: 7px 14px; border-radius: 999px;
   border: 1px solid rgba(255,255,255,.14); background: transparent; color: var(--muted); cursor: pointer;
 }
@@ -21,20 +29,45 @@ p.lead { color: var(--muted); margin: 0 0 16px; }
 .chip.on { background: var(--accent); border-color: var(--accent); color: #04202a; }
 .chip:active { transform: scale(.96); }
 
-/* カード */
-ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+/* カードのグリッド：スマホ2列 → タブレット3列 → PC4列 */
+ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 600px) { ul { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
+@media (min-width: 860px) { ul { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
 a.card {
-  display: flex; gap: 14px; align-items: center; padding: 16px; border-radius: 16px;
+  display: flex; flex-direction: column; height: 100%;
+  border-radius: 14px; overflow: hidden;
   background: var(--card); color: inherit; text-decoration: none;
   border: 1px solid rgba(255,255,255,.06);
+  transition: transform .12s, border-color .12s;
 }
-a.card.folder { border-style: dashed; border-color: rgba(255,255,255,.18); }
-a.card:active { transform: scale(.98); }
-.icon { font-size: 32px; width: 48px; text-align: center; flex: none; }
-.body { min-width: 0; }
-.name { font-weight: 800; font-size: 18px; }
-.desc { color: var(--muted); font-size: 14px; margin-top: 2px; line-height: 1.5; }
-.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+a.card:active { transform: scale(.97); }
+@media (hover: hover) { a.card:hover { border-color: rgba(92,225,255,.4); transform: translateY(-2px); } }
+a.card.folder { border-style: dashed; border-color: rgba(255,255,255,.2); }
+
+.thumb { position: relative; aspect-ratio: 4 / 3; background: #000; }
+.thumb canvas { display: block; width: 100%; height: 100%; }
+.best {
+  position: absolute; right: 6px; top: 6px;
+  font-size: 11px; font-weight: 800; letter-spacing: .03em;
+  padding: 3px 8px; border-radius: 999px;
+  background: rgba(0,0,0,.65); color: #ffd84d;
+}
+
+.body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; }
+.name { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 15px; line-height: 1.3; }
+.name .icon { flex: none; }
+.name .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desc {
+  color: var(--muted); font-size: 12px; line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
 .tags:empty { display: none; }
-.tag { font-size: 12px; color: var(--muted); background: rgba(255,255,255,.06); padding: 2px 8px; border-radius: 999px; }
+.tag { font-size: 11px; color: var(--muted); background: rgba(255,255,255,.06); padding: 2px 7px; border-radius: 999px; }
 .tag.on { color: var(--accent); background: rgba(92,225,255,.12); }
+
+@media (min-width: 600px) {
+  .name { font-size: 16px; }
+  .desc { font-size: 13px; }
+}

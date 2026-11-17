@@ -21,7 +21,22 @@
   renderGameList({
     root: '',
     section: 'main',
-    folder: { path: 'others/', icon: '🎲', name: 'その他ゲーム', desc: others.map(g => g.name).join('・'), tags: [] },
+    folder: {
+      path: 'others/', icon: '🎲', name: 'その他ゲーム', desc: others.map(g => g.name).join('・'), tags: [],
+      // 中のゲームのアイコンを並べたサムネイル
+      thumb(c, w, h) {
+        const g = c.createLinearGradient(0, 0, w, h);
+        g.addColorStop(0, '#1b2246'); g.addColorStop(1, '#151c35');
+        c.fillStyle = g; c.fillRect(0, 0, w, h);
+        c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '46px system-ui, sans-serif';
+        const icons = others.map(o => o.icon), n = icons.length;
+        const top = Math.ceil(n / 2);
+        icons.forEach((ic, i) => {
+          const row = i < top ? 0 : 1, cnt = row ? n - top : top, k = row ? i - top : i;
+          c.fillText(ic, w / 2 + (k - (cnt - 1) / 2) * 72, h / 2 + (row ? 40 : -36));
+        });
+      },
+    },
   });
 </script>
 </body>
