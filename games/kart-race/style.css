@@ -369,6 +369,27 @@ body {
 
 .panel .best b { color: #ff5c7a; }
 
+/* ===== 低い画面(横向きのスマホ)ではタイトル・ゴール画面を詰めて表示する ===== */
+.overlay {
+  overflow-y: auto;     /* それでも収まらないときはスクロールできるように */
+  touch-action: pan-y;
+}
+
+@media (max-height: 420px) {
+  .overlay { align-items: flex-start; padding: 8px 16px; }
+  .panel { margin: auto; padding: 10px 18px; }
+  .panel h1 { font-size: 24px; }
+  .panel .sub { display: none; }
+  .levels { margin-top: 6px; }
+  .levels button { padding: 5px 12px; }
+  .panel .label { margin: 8px 0 6px; font-size: 13px; }
+  .mode { padding: 8px; font-size: 15px; }
+  .mode .ic { display: inline; font-size: 18px; margin: 0 6px 0 0; }
+  .panel .hint { margin-top: 6px; font-size: 11px; }
+  .panel .total { margin-top: 2px; }
+  .panel .best { margin: 6px 0 8px; }
+}
+
 /* ===== 縦向きの案内(スマホで縦にしているときだけ出す) ===== */
 #rotate {
   display: none;
