@@ -56,6 +56,14 @@ class Player {
     this.vy = -520;
   }
 
+  // 穴に落ちた：跳ねずにそのまま下へ落ちていく
+  fallOut() {
+    if (this.dead) return;
+    this.dead = true;
+    this.deadT = 0.35;   // 止まる演出は飛ばす
+    this.vx = 0;
+  }
+
   // 敵を踏んだ：上に跳ね返る（ジャンプボタンを押していれば高く）
   bounce(enemyTop) {
     this.y = enemyTop - this.h;

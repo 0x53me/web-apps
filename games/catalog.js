@@ -156,6 +156,52 @@ const GAMES = [
     },
   },
   {
+    section: 'main', path: 'purun-run/', icon: '🟢', name: 'プルン・ラン',
+    desc: 'ゼリーのプルンで走って跳んで、敵を踏んでコインを集め、ゴールの旗を目指す横スクロールアクション',
+    tags: ['アクション', '横スクロール'],
+    best: _best('purun-run-best'),
+    thumb(c, w, h) {
+      const sky = c.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, '#6ec3ff'); sky.addColorStop(1, '#d9f1ff');
+      c.fillStyle = sky; c.fillRect(0, 0, w, h);
+      c.fillStyle = 'rgba(255,255,255,.9)';
+      for (const [x, y] of [[40, 40], [200, 28]]) for (const [ox, oy, r] of [[0, 0, 14], [16, -6, 17], [32, 0, 13]]) { c.beginPath(); c.arc(x + ox, y + oy, r, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = '#7fcf95';
+      c.beginPath(); c.moveTo(0, 190);
+      for (let x = 0; x <= w; x += 8) c.lineTo(x, 172 + Math.sin(x * 0.02) * 16);
+      c.lineTo(w, 200); c.lineTo(0, 200); c.fill();
+      const T = 24, gy = 200;
+      c.fillStyle = '#9b6a45'; c.fillRect(0, gy, w, h - gy);
+      c.fillStyle = '#5bd16b'; c.fillRect(0, gy, w, 7);
+      // ブロック列
+      [['B', 96], ['?', 120], ['B', 144], ['?', 168]].forEach(([k, x]) => {
+        c.fillStyle = k === 'B' ? '#d9733f' : '#7d5cff'; c.fillRect(x, 100, T, T);
+        if (k === 'B') { c.fillStyle = '#a84e24'; c.fillRect(x, 111, T, 2); c.fillRect(x + 11, 100, 2, 11); }
+        else { c.fillStyle = '#ffe066'; _star(c, x + T / 2, 112, 7); c.fill(); }
+      });
+      // コイン
+      for (const x of [110, 134, 158]) { c.fillStyle = '#e09a1a'; c.beginPath(); c.ellipse(x + 10, 76, 6, 8, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ffd23f'; c.beginPath(); c.ellipse(x + 10, 76, 4, 6, 0, 0, Math.PI * 2); c.fill(); }
+      // プルン（ジャンプ中）
+      const px = 128, py = 150;
+      c.fillStyle = '#5ce1c6'; c.strokeStyle = '#1b8f6c'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(px - 17, py + 16);
+      c.bezierCurveTo(px - 18, py - 8, px - 10, py - 18, px, py - 18);
+      c.bezierCurveTo(px + 10, py - 18, px + 18, py - 8, px + 17, py + 16);
+      c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(px - 8, py - 8, 3, 5, -0.5, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#123'; c.fillRect(px - 1, py - 4, 3, 7); c.fillRect(px + 7, py - 4, 3, 7);
+      // どんぐりん
+      const ex = 222;
+      c.fillStyle = '#c98a4b'; c.beginPath(); c.ellipse(ex, gy - 10, 12, 11, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#6b4423'; c.beginPath(); c.ellipse(ex, gy - 16, 13, 8, 0, Math.PI, 0); c.fill();
+      c.fillStyle = '#fff'; c.fillRect(ex - 6, gy - 12, 4, 5); c.fillRect(ex + 1, gy - 12, 4, 5);
+      // 旗
+      c.fillStyle = '#e8ecf5'; c.fillRect(286, 70, 4, gy - 70);
+      c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(288, 68, 5, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#5bd16b'; c.beginPath(); c.moveTo(286, 76); c.lineTo(256, 86); c.lineTo(286, 96); c.fill();
+    },
+  },
+  {
     section: 'others', path: 'others/snake/', icon: '🐍', name: 'スネークゲーム',
     desc: 'エサを食べて長くなろう。壁と自分の体に注意。',
     tags: ['アクション', '定番'],
@@ -262,7 +308,7 @@ const GAMES = [
 ];
 
 // タグの表示順（ここにないタグは後ろに並ぶ）
-const TAG_ORDER = ['ワンタップ', '反射神経', 'タイミング', 'アクション', 'レース', '3D', 'パズル', 'じっくり', 'エンドレス', '定番'];
+const TAG_ORDER = ['ワンタップ', '反射神経', 'タイミング', 'アクション', '横スクロール', 'レース', '3D', 'パズル', 'じっくり', 'エンドレス', '定番'];
 
 // ---------- 一覧の描画 ----------
 //   root:    このページから games/ への相対パス（トップは ''、others は '../'）

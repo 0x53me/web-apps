@@ -42,7 +42,7 @@
   // 指を離したとき（ブラウザが「ユーザー操作」と認めるタイミング）に全画面にする
   document.addEventListener('touchend', e => {
     if (!autoPending || !isLandscape() || isFullscreen()) return;
-    if (e.target.closest && e.target.closest('#backBtn, #fsBtn')) return;
+    if (e.target.closest && e.target.closest('#backBtn, #fsBtn, #pauseBtn')) return;
     autoPending = false;
     enter();
   }, { passive: true });

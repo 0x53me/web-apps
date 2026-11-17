@@ -17,8 +17,12 @@
   <!-- ゲーム画面（内部解像度は CONFIG.WIDTH × CONFIG.HEIGHT で固定。表示サイズだけ拡大縮小する） -->
   <div id="screen"><canvas id="game"></canvas></div>
 
-  <a id="backBtn" href="../">← 一覧</a>
-  <button id="fsBtn" class="hidden" type="button">⛶ 全画面</button>
+  <!-- 左上のボタン -->
+  <div id="topLeft">
+    <a id="backBtn" href="../">← 一覧</a>
+    <button id="fsBtn" class="hidden" type="button">⛶ 全画面</button>
+    <button id="pauseBtn" class="hidden" type="button" aria-label="一時停止">II</button>
+  </div>
 
   <!-- スマホ用の仮想ボタン（タッチ端末のときだけ表示） -->
   <div id="controls">
@@ -32,6 +36,50 @@
     </div>
   </div>
 
+  <!-- ===== 画面（タイトル・一時停止・クリア・ゲームオーバー） ===== -->
+  <div id="titleScreen" class="overlay">
+    <h1 class="logo">プルン<span>・</span>ラン</h1>
+    <div class="how">
+      <p>◀ ▶ で移動、<b>ジャンプ</b>は長押しで高く跳べる</p>
+      <p>敵は<b>上から踏む</b>と倒せる。横から当たるとアウト</p>
+      <p><b>★ブロック</b>を下から叩くとコインやアイテム</p>
+      <p>右のはしの<b>旗</b>にタッチでゴール！</p>
+      <p class="pc">PC：← → 移動 / スペース ジャンプ / Shift ダッシュ</p>
+    </div>
+    <div class="sub" id="titleBest"></div>
+    <button class="main" id="startBtn" type="button">スタート</button>
+  </div>
+
+  <div id="pauseScreen" class="overlay hidden">
+    <h2>一時停止</h2>
+    <button class="main" id="resumeBtn" type="button">つづける</button>
+    <button class="ghost" id="quitBtn" type="button">タイトルへ</button>
+  </div>
+
+  <div id="clearScreen" class="overlay hidden">
+    <h2 class="clear">STAGE CLEAR!</h2>
+    <div class="big" id="clearScore">0</div>
+    <div class="record hidden" id="clearRecord">NEW RECORD!</div>
+    <table class="detail" id="clearDetail"></table>
+    <div class="row">
+      <button class="main" id="clearRetryBtn" type="button">もう一度</button>
+      <button class="ghost" id="clearShareBtn" type="button">📤 結果をシェア</button>
+    </div>
+    <a class="back" href="../">← ゲーム一覧</a>
+  </div>
+
+  <div id="overScreen" class="overlay hidden">
+    <h2 class="over">GAME OVER</h2>
+    <div class="big" id="overScore">0</div>
+    <div class="record hidden" id="overRecord">NEW RECORD!</div>
+    <div class="sub" id="overInfo"></div>
+    <div class="row">
+      <button class="main" id="overRetryBtn" type="button">リトライ</button>
+      <button class="ghost" id="overShareBtn" type="button">📤 結果をシェア</button>
+    </div>
+    <a class="back" href="../">← ゲーム一覧</a>
+  </div>
+
   <!-- 縦画面のときの案内 -->
   <div id="rotate">
     <div class="phone">📱</div>
@@ -39,6 +87,7 @@
   </div>
 
   <!-- 読み込む順番が大事（後のファイルが前のファイルの中身を使う） -->
+  <script src="../share.js"></script>
   <script src="js/config.js"></script>
   <script src="js/stage.js"></script>
   <script src="js/input.js"></script>

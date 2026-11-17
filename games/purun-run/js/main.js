@@ -33,6 +33,23 @@ let score = 0;
 let coinCount = 0;
 let time = 0;        // 経過時間（コインの回転アニメなどに使う）
 
+// 画面の状態：title（タイトル）→ play（プレイ中）→ goal（旗に触れた後の演出）→ clear（クリア）
+//            やられて残り機数が0なら over（ゲームオーバー）。play 中は pause（一時停止）にもなる
+let state = 'title';
+let lives = CONFIG.LIVES;   // 残り機数
+let playTime = 0;           // プレイ時間（秒）。やられ演出中は数えない
+let goalT = 0;              // 旗に触れてからの時間
+let flagBonus = 0;          // 旗ボーナス
+let flagY = 0;              // 旗の布の位置（ゴール後に下がってくる）
+
+// ハイスコアは localStorage（このブラウザの中だけに保存される）に入れる
+const BEST_KEY = 'purun-run-best';
+const BEST_TIME_KEY = 'purun-run-best-time';
+function loadNum(key) { try { return Number(localStorage.getItem(key)) || 0; } catch (e) { return 0; } }
+function saveNum(key, v) { try { localStorage.setItem(key, String(v)); } catch (e) {} }
+let bestScore = loadNum(BEST_KEY);
+let bestTime = loadNum(BEST_TIME_KEY);   // 一番早いクリアタイム（0 はまだクリアしていない）
+
 // ステージを最初の状態に戻す（ブロック・コイン・敵を並べ直す）
 function loadStage() {
   stage = new Stage(STAGES[0]);
@@ -41,6 +58,7 @@ function loadStage() {
   items = [];
   effects = [];
   bumps = [];
+  flagY = 0;
 }
 loadStage();
 
@@ -61,12 +79,18 @@ function updateCamera(dt, instant) {
   camera.y = Math.max(0, Math.min(camera.y, stage.height - H));
 }
 
-// やられたらスタートからやり直し（ライフ制はあとの段階で追加）。
-// ステージは最初の状態に戻るが、スコアとコイン枚数はそのまま
+// スタート地点からやり直す（ステージは最初の状態に戻る。スコアとコイン枚数はそのまま）
 function respawn() {
   loadStage();
   player.reset(stage.start.x, stage.start.y);
   updateCamera(0, true);
+}
+
+// やられ演出が終わった：残り機数を1つ減らし、0になったらゲームオーバー
+function loseLife() {
+  lives--;
+  if (lives > 0) respawn();
+  else gameOver();
 }
 
 // 2つの四角形が重なっているか（AABB の当たり判定）
@@ -175,20 +199,206 @@ function updateItems(dt) {
   bumps = bumps.filter(b => b.t < 0.2);
 }
 
+// ---------- ゴール ----------
+// 旗ざおに触れた：旗ボーナスを計算して、ゴールの演出を始める
+function startGoal() {
+  const g = stage.goal;
+  state = 'goal';
+  goalT = 0;
+  // 高い位置でつかむほどボーナスが多い（100点きざみ）
+  const k = Math.max(0, Math.min(1, (g.bottom - (player.y + player.h)) / (g.bottom - g.top)));
+  flagBonus = Math.round((CONFIG.FLAG_BONUS_MIN + (CONFIG.FLAG_BONUS_MAX - CONFIG.FLAG_BONUS_MIN) * k) / 100) * 100;
+  addScore(flagBonus, g.x, player.y - 10);
+  // 旗ざおの左側にくっつく
+  player.x = g.x - player.w + 2;
+  player.vx = 0; player.vy = 0;
+  player.facing = 1;
+  player.shield = false;
+  player.invincible = 0;
+  Input.clear();
+  $('pauseBtn').classList.add('hidden');
+}
+
+// ゴールの演出：旗ざおをすべり降りる → 右の家まで歩く → クリア画面
+function updateGoal(dt) {
+  const g = stage.goal;
+  goalT += dt;
+  player.t += dt;
+  const groundY = g.bottom - player.h;
+  // 旗の布も下に降りてくる
+  flagY = Math.min(flagY + 220 * dt, g.bottom - g.top - 30);
+  if (player.y < groundY) {
+    // すべり降りる
+    player.y = Math.min(player.y + 220 * dt, groundY);
+    player.onGround = false;
+  } else {
+    player.onGround = true;
+    if (goalT > 0.9) {
+      // 右へ歩いて家に入る
+      player.x += 110 * dt;
+      player.vx = 110;
+    }
+  }
+  if (goalT > 2.6) showClear();
+  updateCamera(dt, false);
+  for (const ef of effects) ef.update(dt);
+  effects = effects.filter(ef => !ef.done);
+}
+
 // ---------- 更新 ----------
 function update(dt) {
   time += dt;
+  if (state === 'goal') { updateGoal(dt); return; }
+  if (state !== 'play') return;   // タイトル・一時停止・クリア・ゲームオーバー中は止める
+
+  if (!player.dead) playTime += dt;
   player.update(dt, stage);
+  furthestX = Math.max(furthestX, player.x);
   if (player.headHit) {                         // 頭でブロックを叩いた
     hitBlock(player.headHit.col, player.headHit.row);
     player.headHit = null;
   }
   if (!player.dead) updateEnemies(dt);          // やられている間は敵も止める
   if (!player.dead) updateItems(dt);
-  if (!player.dead && player.y > stage.height + 64) respawn();       // 穴に落ちた
-  if (player.dead && player.deadT > CONFIG.RESPAWN_DELAY) respawn(); // やられ演出が終わった
+
+  // 旗ざおに触れたらゴール
+  const g = stage.goal;
+  if (g && !player.dead && overlaps(player, { x: g.x, y: g.top, w: g.w, h: g.bottom - g.top })) {
+    startGoal();
+    return;
+  }
+
+  if (!player.dead && player.y > stage.height + 32) player.fallOut();      // 穴に落ちた
+  if (player.dead && player.deadT > CONFIG.RESPAWN_DELAY) loseLife();      // やられ演出が終わった
   if (!player.dead) updateCamera(dt, false);    // やられている間はカメラを止める
 }
+
+// ---------- 画面の切り替え（タイトル・一時停止・クリア・ゲームオーバー） ----------
+const $ = id => document.getElementById(id);
+const SCREENS = ['titleScreen', 'pauseScreen', 'clearScreen', 'overScreen'];
+function showScreen(id) {
+  SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== id));
+  $('pauseBtn').classList.toggle('hidden', id !== null);   // 一時停止ボタンはプレイ中だけ
+}
+
+function updateTitleBest() {
+  const parts = [];
+  if (bestScore > 0) parts.push('ハイスコア ' + bestScore);
+  if (bestTime > 0) parts.push('ベストタイム ' + bestTime.toFixed(1) + '秒');
+  $('titleBest').textContent = parts.join(' ・ ');
+}
+
+// 新しくゲームを始める
+function newGame() {
+  score = 0;
+  coinCount = 0;
+  lives = CONFIG.LIVES;
+  playTime = 0;
+  furthestX = 0;
+  respawn();
+  Input.clear();
+  state = 'play';
+  showScreen(null);
+}
+
+function pauseGame() {
+  if (state !== 'play') return;
+  state = 'pause';
+  Input.clear();
+  showScreen('pauseScreen');
+}
+function resumeGame() {
+  if (state !== 'pause') return;
+  state = 'play';
+  Input.clear();
+  showScreen(null);
+}
+function toTitle() {
+  state = 'title';
+  respawn();
+  updateTitleBest();
+  showScreen('titleScreen');
+}
+
+// ハイスコアを更新したら保存する。更新したら true
+function saveBest() {
+  if (score > bestScore) { bestScore = score; saveNum(BEST_KEY, bestScore); return true; }
+  return false;
+}
+
+// 進んだ割合（ゲームオーバー時の表示用）
+function progressPercent() {
+  const goalX = stage.goal ? stage.goal.x : stage.width;
+  return Math.max(0, Math.min(100, Math.floor(furthestX / goalX * 100)));
+}
+let furthestX = 0;   // 一番遠くまで進んだ位置
+
+let shareText = '';
+
+function showClear() {
+  state = 'clear';
+  // タイムボーナス（早いほど多い）
+  const timeBonus = Math.max(0, Math.floor(CONFIG.TIME_BONUS_LIMIT - playTime)) * CONFIG.TIME_BONUS_PER_SEC;
+  score += timeBonus;
+  const isRecord = saveBest();
+  const isBestTime = bestTime === 0 || playTime < bestTime;
+  if (isBestTime) { bestTime = playTime; saveNum(BEST_TIME_KEY, Math.round(bestTime * 10) / 10); }
+
+  $('clearScore').textContent = score;
+  $('clearRecord').classList.toggle('hidden', !isRecord);
+  const rows = [
+    ['タイム', playTime.toFixed(1) + ' 秒' + (isBestTime ? '（ベスト！）' : '')],
+    ['コイン', coinCount + ' 枚'],
+    ['旗ボーナス', '+' + flagBonus],
+    ['タイムボーナス', '+' + timeBonus],
+    ['ハイスコア', String(bestScore)],
+  ];
+  const table = $('clearDetail');
+  table.innerHTML = '';
+  for (const [k, v] of rows) {
+    const tr = table.insertRow();
+    tr.insertCell().textContent = k;
+    tr.insertCell().textContent = v;
+  }
+  shareText = `🟢 プルン・ランをクリア！ スコア ${score}（タイム ${playTime.toFixed(1)} 秒・コイン ${coinCount} 枚）`;
+  showScreen('clearScreen');
+}
+
+function gameOver() {
+  state = 'over';
+  const isRecord = saveBest();
+  $('overScore').textContent = score;
+  $('overRecord').classList.toggle('hidden', !isRecord);
+  const pct = progressPercent();
+  $('overInfo').textContent = `ゴールまで ${pct}% ・ コイン ${coinCount} 枚 ・ ハイスコア ${bestScore}`;
+  shareText = `🟢 プルン・ランで ゴールまで ${pct}% 進んだ！ スコア ${score}`;
+  showScreen('overScreen');
+}
+
+// ボタン
+$('startBtn').addEventListener('click', newGame);
+$('clearRetryBtn').addEventListener('click', newGame);
+$('overRetryBtn').addEventListener('click', newGame);
+$('resumeBtn').addEventListener('click', resumeGame);
+$('quitBtn').addEventListener('click', toTitle);
+$('pauseBtn').addEventListener('click', pauseGame);
+$('clearShareBtn').addEventListener('click', () => GameShare.share(shareText));
+$('overShareBtn').addEventListener('click', () => GameShare.share(shareText));
+
+// キーボード：Enter / スペースでスタート・リトライ、Esc / P で一時停止
+window.addEventListener('keydown', e => {
+  if (e.code === 'Enter' || (e.code === 'Space' && !e.repeat && state !== 'play')) {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();   // ボタンの二重押しを防ぐ
+    if (state === 'title' || state === 'clear' || state === 'over') newGame();
+    else if (state === 'pause') resumeGame();
+  } else if (e.code === 'Escape' || e.code === 'KeyP') {
+    if (state === 'play') pauseGame();
+    else if (state === 'pause') resumeGame();
+  }
+});
+
+// 別のアプリやタブに切り替えたら自動で一時停止
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 
 // ---------- 描画 ----------
 function drawBackground() {
@@ -344,28 +554,100 @@ function drawStage() {
   }
 }
 
-function drawHud() {
-  // 右上：コイン枚数とスコア
-  ctx.fillStyle = 'rgba(11,16,32,0.45)';
-  ctx.fillRect(W - 218, 8, 210, 26);
-  drawCoinShape(ctx, W - 202, 21, 7, 9, 1);
+// ゴールの旗ざお・旗・ゴールの家
+function houseDoorX() { return stage.goal.x + 5 * T; }
+
+function drawGoal(camX, camY) {
+  const g = stage.goal;
+  if (!g) return;
+
+  // ゴールの家（プルンの家）。ドアの位置に向かって歩いていく
+  const dx = houseDoorX() - camX, gy = g.bottom - camY;
+  if (dx > -120 && dx < W + 120) {
+    ctx.fillStyle = '#f4e3c3';                     // かべ
+    ctx.fillRect(dx - 56, gy - 70, 112, 70);
+    ctx.fillStyle = '#e0c99c';
+    for (let y = gy - 60; y < gy; y += 12) ctx.fillRect(dx - 56, y, 112, 2);
+    ctx.fillStyle = '#ff7a9c';                     // やね
+    ctx.beginPath();
+    ctx.moveTo(dx - 70, gy - 68); ctx.lineTo(dx, gy - 118); ctx.lineTo(dx + 70, gy - 68);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#d9577a';
+    ctx.fillRect(dx - 70, gy - 72, 140, 6);
+    ctx.fillStyle = '#7a4a2a';                     // ドア
+    ctx.beginPath();
+    ctx.moveTo(dx - 15, gy); ctx.lineTo(dx - 15, gy - 30);
+    ctx.arc(dx, gy - 30, 15, Math.PI, 0); ctx.lineTo(dx + 15, gy);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffd23f';
+    ctx.beginPath(); ctx.arc(dx + 8, gy - 20, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#9ad9ff';                     // まど
+    ctx.fillRect(dx - 46, gy - 52, 20, 18);
+    ctx.fillRect(dx + 26, gy - 52, 20, 18);
+  }
+
+  // 旗ざお
+  const px = g.x - camX;
+  if (px < -60 || px > W + 60) return;
+  ctx.fillStyle = '#e8ecf5';
+  ctx.fillRect(px, g.top - camY, g.w, g.bottom - g.top);
+  ctx.fillStyle = '#b9c0d4';
+  ctx.fillRect(px + g.w - 2, g.top - camY, 2, g.bottom - g.top);
+  ctx.fillStyle = '#ffd23f';                       // てっぺんの玉
+  ctx.beginPath(); ctx.arc(px + g.w / 2, g.top - camY - 4, 7, 0, Math.PI * 2); ctx.fill();
+  // 旗（風でゆれる三角形。ゴール後は下に降りてくる）
+  const fy = g.top - camY + 6 + flagY;
+  const wave = Math.sin(time * 5) * 3;
+  ctx.fillStyle = '#5bd16b';
+  ctx.beginPath();
+  ctx.moveTo(px, fy); ctx.lineTo(px - 44, fy + 12 + wave); ctx.lineTo(px, fy + 26);
+  ctx.closePath(); ctx.fill();
   ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(px - 14, fy + 13, 4, 0, Math.PI * 2); ctx.fill();
+}
+
+// 残り機数の横に出す小さなプルン
+function drawMiniPurun(x, y) {
+  ctx.fillStyle = '#5ce1c6';
+  ctx.beginPath();
+  ctx.ellipse(x, y + 2, 8, 7, 0, Math.PI, 0);
+  ctx.lineTo(x + 8, y + 6); ctx.lineTo(x - 8, y + 6);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#123';
+  ctx.fillRect(x - 3, y - 1, 1.6, 3);
+  ctx.fillRect(x + 2, y - 1, 1.6, 3);
+}
+
+function drawHud() {
+  if (state === 'title') return;
+  // 右上：残り機数・コイン枚数・タイム・スコア
+  ctx.fillStyle = 'rgba(11,16,32,0.45)';
+  ctx.fillRect(W - 330, 8, 322, 26);
   ctx.font = 'bold 14px system-ui, sans-serif';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
-  ctx.fillText('× ' + coinCount, W - 190, 21);
+  drawMiniPurun(W - 314, 19);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('× ' + Math.max(0, lives), W - 302, 21);
+  drawCoinShape(ctx, W - 254, 21, 7, 9, 1);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('× ' + coinCount, W - 243, 21);
+  ctx.fillText('TIME ' + String(Math.floor(playTime)).padStart(3, '0'), W - 196, 21);
   ctx.textAlign = 'right';
   ctx.fillText('SCORE ' + String(score).padStart(6, '0'), W - 16, 21);
 }
 
 function draw() {
   drawBackground();
-  drawStage();
   const camX = Math.round(camera.x), camY = Math.round(camera.y);
+  drawGoal(camX, camY);
+  drawStage();
   for (const c of coins) c.draw(ctx, camX, camY, time);
   for (const it of items) it.draw(ctx, camX, camY);
   for (const e of enemies) e.draw(ctx, camX, camY);
-  player.draw(ctx, camX, camY);
+  // ゴール後、家のドアまで歩いたら中に入った（描かない）
+  const inHouse = (state === 'goal' || state === 'clear') && player.x + player.w / 2 > houseDoorX();
+  if (!inHouse) player.draw(ctx, camX, camY);
   for (const ef of effects) ef.draw(ctx, camX, camY);
   drawHud();
 }
@@ -395,5 +677,8 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+// ---------- はじめはタイトル画面 ----------
 updateCamera(0, true);
+updateTitleBest();
+showScreen('titleScreen');
 requestAnimationFrame(loop);

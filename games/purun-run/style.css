@@ -22,26 +22,73 @@ body {
 }
 #game { display: block; }
 
-/* ===== 一覧へ戻るリンク ===== */
-#backBtn {
+/* ===== 左上のボタン（一覧へ・全画面・一時停止） ===== */
+#topLeft {
   position: fixed; z-index: 20;
   top: calc(env(safe-area-inset-top) + 8px);
   left: calc(env(safe-area-inset-left) + 10px);
-  padding: 4px 10px; border-radius: 999px;
-  background: rgba(11, 16, 32, .45); color: #fff;
-  font-size: 13px; font-weight: 700; text-decoration: none;
+  display: flex; gap: 6px;
 }
-
-/* ===== 全画面ボタン（全画面でないときだけ表示） ===== */
-#fsBtn {
-  position: fixed; z-index: 20;
-  top: calc(env(safe-area-inset-top) + 8px);
-  left: calc(env(safe-area-inset-left) + 82px);
+#topLeft a, #topLeft button {
   padding: 4px 10px; border-radius: 999px; border: 0;
   background: rgba(11, 16, 32, .45); color: #fff;
-  font: inherit; font-size: 13px; font-weight: 700;
+  font: inherit; font-size: 13px; font-weight: 700; text-decoration: none;
+  line-height: 1.4;
 }
+#pauseBtn { min-width: 34px; }
 .hidden { display: none !important; }
+
+/* ===== 画面（タイトル・一時停止・クリア・ゲームオーバー） ===== */
+.overlay {
+  position: fixed; inset: 0; z-index: 30;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 16px; text-align: center;
+  background: rgba(11, 16, 32, .72);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+#titleScreen { background: rgba(11, 16, 32, .45); }
+.logo {
+  margin: 0; font-size: 46px; font-weight: 900; letter-spacing: .06em; line-height: 1.1;
+  color: #7dffcf; text-shadow: 0 4px 0 #1b8f6c, 0 8px 20px rgba(0,0,0,.4);
+}
+.logo span { color: #ffd23f; }
+h2 { margin: 0; font-size: 30px; letter-spacing: .06em; }
+h2.clear { color: #ffd23f; }
+h2.over { color: #ff7a8a; }
+.how { font-size: 14px; line-height: 1.6; color: #dfe6ff; }
+.how p { margin: 0; }
+.how b { color: #fff; }
+.how .pc { color: #9aa6d1; font-size: 12px; margin-top: 4px; }
+body.touch .how .pc { display: none; }
+.big { font-size: 48px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.sub { color: #9aa6d1; font-size: 14px; }
+.record { color: #ffd23f; font-weight: 800; letter-spacing: .1em; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+button.main, button.ghost {
+  font: inherit; font-weight: 800; border-radius: 999px; cursor: pointer;
+}
+button.main {
+  font-size: 18px; padding: 11px 36px; border: 0;
+  background: #7dffcf; color: #003324; box-shadow: 0 5px 20px rgba(125,255,207,.35);
+}
+button.ghost {
+  font-size: 15px; padding: 10px 22px;
+  border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: #fff;
+}
+button.main:active, button.ghost:active { transform: scale(.96); }
+a.back { color: #9aa6d1; font-size: 13px; }
+table.detail { border-collapse: collapse; font-size: 14px; color: #dfe6ff; }
+table.detail td { padding: 1px 10px; }
+table.detail td:first-child { text-align: left; color: #9aa6d1; }
+table.detail td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* 横画面のスマホは縦が狭いので詰める */
+@media (max-height: 420px) {
+  .overlay { gap: 6px; }
+  .logo { font-size: 36px; }
+  .big { font-size: 38px; }
+  h2 { font-size: 24px; }
+  .how { font-size: 13px; line-height: 1.5; }
+}
 
 /* ===== 仮想ボタン ===== */
 #controls { display: none; }

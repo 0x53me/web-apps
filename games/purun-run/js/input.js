@@ -22,6 +22,12 @@ const Input = {
     this._jumpPressed = false;
     return p;
   },
+
+  // 画面が切り替わったときなどに、押されている状態を全部リセットする
+  clear() {
+    for (const k of ['left', 'right', 'jump', 'dash']) { this._key[k] = false; this._touch[k] = false; this[k] = false; }
+    this._jumpPressed = false;
+  },
 };
 
 // ---------- キーボード ----------
@@ -78,9 +84,9 @@ const Input = {
   function onTouch(e) {
     // タッチ端末だと分かったら仮想ボタンを表示
     document.body.classList.add('touch');
-    // 「← 一覧」「⛶ 全画面」のタップだけは普通に動かす
-    if (e.target.closest && e.target.closest('#backBtn, #fsBtn')) return;
-    e.preventDefault();   // スクロール・拡大・長押しメニューを止める
+    // 左上のボタンや、タイトル・クリアなどの画面のボタンは普通にタップできるようにする
+    const isUi = e.target.closest && e.target.closest('#topLeft, .overlay');
+    if (!isUi) e.preventDefault();   // それ以外ではスクロール・拡大・長押しメニューを止める
     update(e.touches);
   }
   for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
